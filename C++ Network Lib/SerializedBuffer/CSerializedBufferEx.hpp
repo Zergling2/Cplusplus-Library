@@ -1,3 +1,7 @@
+/*
+* (WARNING!) It is not safe for buffer overflow. Please handle it by the user.
+*/
+
 #pragma once
 
 #include "CSerializedBuffer.hpp"
@@ -10,6 +14,10 @@ namespace SJNET
 		class CSerializedBufferEx : public CSerializedBuffer
 		{
 		public:
+			// using SJNET::LIB::CSerializedBuffer::In;
+			// using SJNET::LIB::CSerializedBuffer::Out;
+			// using SJNET::LIB::CSerializedBuffer::operator<<;
+			// using SJNET::LIB::CSerializedBuffer::operator>>;
 			inline void szIn(_In_ const char* szData);
 			inline void szIn(_In_ const std::string& data);
 			inline void szIn(_In_ const std::string&& data);
