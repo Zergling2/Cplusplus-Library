@@ -501,9 +501,7 @@ namespace SJNET
 			while (iter != this->end())
 			{
 				if (*iter == data)
-				{
 					iter = this->erase_with_scalar_delete(iter);
-				}
 				else
 					iter++;
 			}
@@ -517,9 +515,7 @@ namespace SJNET
 			while (iter != this->end())
 			{
 				if (*iter == data)
-				{
 					iter = this->erase_with_vector_delete(iter);
-				}
 				else
 					iter++;
 			}
