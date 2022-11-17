@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CSerializedBuffer.hpp"
+#include <string>
 
 namespace SJNET
 {
@@ -81,3 +82,5 @@ namespace SJNET
 		}
 	}
 }
+
+typedef SJNET::LIB::CSerializedBufferEx SJNetPacket;
