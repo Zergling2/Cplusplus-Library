@@ -1,0 +1,608 @@
+#ifndef __C_SERIALIZED_BUFFER_H__
+#define __C_SERIALIZED_BUFFER_H__
+
+#pragma warning (disable:26495)
+
+#define SERIALIZED_BUFFER_DEFAULT_SIZE 1400
+
+#include <iostream>
+#include <string>
+
+#include "Logger.h"
+
+namespace SJNET
+{
+	namespace LIB
+	{
+		template<std::size_t cbSize = SERIALIZED_BUFFER_DEFAULT_SIZE>
+		class CSerializedBuffer
+		{
+		public:
+			CSerializedBuffer();
+
+			inline const void* GetBufferBeginAddress()			{ return _Controller.bufferBeginAddress; }
+			inline const void* GetBufferEndAddress()			{ return _Controller.bufferEndAddress; }
+			inline const void* GetBufferBeginAddress() const	{ return _Controller.bufferBeginAddress; }
+			inline const void* GetBufferEndAddress() const		{ return _Controller.bufferEndAddress; }
+			inline void MoveWritePointer(int offset)			{ _Controller.writePointer = reinterpret_cast<char*>(_Controller.writePointer) + offset; }
+
+			inline void In(_In_ char data);
+			inline void In(_In_ unsigned char data);
+			inline void In(_In_ short data);
+			inline void In(_In_ unsigned short data);
+			inline void In(_In_ int data);
+			inline void In(_In_ unsigned int data);
+			inline void In(_In_ __int64 data);
+			inline void In(_In_ unsigned __int64 data);
+			inline void In(_In_ float data);
+			inline void In(_In_ double data);
+			inline void In(_In_ const char* szData);
+			inline void In(_In_ const std::string& data);
+			inline void In(_In_ const std::string&& data);
+			inline void In(_In_ const wchar_t* szData);
+			inline void In(_In_ const std::wstring& data);
+			inline void In(_In_ const std::wstring&& data);
+
+			inline CSerializedBuffer& operator<<(_In_ char data);
+			inline CSerializedBuffer& operator<<(_In_ unsigned char data);
+			inline CSerializedBuffer& operator<<(_In_ short data);
+			inline CSerializedBuffer& operator<<(_In_ unsigned short data);
+			inline CSerializedBuffer& operator<<(_In_ int data);
+			inline CSerializedBuffer& operator<<(_In_ unsigned int data);
+			inline CSerializedBuffer& operator<<(_In_ __int64 data);
+			inline CSerializedBuffer& operator<<(_In_ unsigned __int64 data);
+			inline CSerializedBuffer& operator<<(_In_ float data);
+			inline CSerializedBuffer& operator<<(_In_ double data);
+			inline CSerializedBuffer& operator<<(_In_ const char* szData);
+			inline CSerializedBuffer& operator<<(_In_ const std::string& data);
+			inline CSerializedBuffer& operator<<(_In_ const std::string&& data);
+			inline CSerializedBuffer& operator<<(_In_ const wchar_t* szData);
+			inline CSerializedBuffer& operator<<(_In_ const std::wstring& data);
+			inline CSerializedBuffer& operator<<(_In_ const std::wstring&& data);
+
+			inline void Out(_Inout_ char& dest);
+			inline void Out(_Inout_ unsigned char& dest);
+			inline void Out(_Inout_ short& dest);
+			inline void Out(_Inout_ unsigned short& dest);
+			inline void Out(_Inout_ int& dest);
+			inline void Out(_Inout_ unsigned int& dest);
+			inline void Out(_Inout_ __int64& dest);
+			inline void Out(_Inout_ unsigned __int64& dest);
+			inline void Out(_Inout_ float& dest);
+			inline void Out(_Inout_ double& dest);
+			inline void Out(_Inout_ char*& dest);
+			inline void Out(_Inout_ std::string& dest);
+			inline void Out(_Inout_ wchar_t*& dest);
+			inline void Out(_Inout_ std::wstring& dest);
+
+			inline CSerializedBuffer& operator>>(_Inout_ char& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ unsigned char& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ short& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ unsigned short& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ int& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ unsigned int& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ __int64& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ unsigned __int64& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ float& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ double& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ char*& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ std::string& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ wchar_t*& dest);
+			inline CSerializedBuffer& operator>>(_Inout_ std::wstring& dest);
+
+			inline size_t GetBufferSize() const { return _Controller.bufferSize; }
+			inline size_t GetFreeSize()	const { return reinterpret_cast<size_t>(_Controller.bufferEndAddress) - reinterpret_cast<size_t>(_Controller.writePointer); }
+			inline size_t GetUsingSize() const { return reinterpret_cast<size_t>(_Controller.writePointer) - reinterpret_cast<size_t>(_Controller.bufferBeginAddress); }
+			inline void Reuse() { _Controller.readPointer = _Controller.writePointer = _Controller.bufferBeginAddress; }
+		private:
+			struct Controller
+			{
+				size_t bufferSize;
+				char* bufferBeginAddress;
+				void* bufferEndAddress;
+				void* readPointer;
+				void* writePointer;
+			};
+		private:
+			inline void ForceCrash(size_t _violationAddr) const { *reinterpret_cast<int*>(_violationAddr) = 0; }
+			Controller _Controller;
+			char _Buffer[cbSize];
+		};
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>::CSerializedBuffer()
+		{
+			_Controller.bufferSize = cbSize;
+			_Controller.bufferBeginAddress = _Buffer;
+			_Controller.bufferEndAddress = _Buffer + cbSize;
+			_Controller.readPointer = _Buffer;
+			_Controller.writePointer = _Buffer;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ char data)
+		{
+			*reinterpret_cast<char*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<char*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ unsigned char data)
+		{
+			*reinterpret_cast<unsigned char*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<unsigned char*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ short data)
+		{
+			*reinterpret_cast<short*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<short*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ unsigned short data)
+		{
+			*reinterpret_cast<unsigned short*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<unsigned short*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ int data)
+		{
+			*reinterpret_cast<int*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<int*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ unsigned int data)
+		{
+			*reinterpret_cast<unsigned int*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<unsigned int*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ __int64 data)
+		{
+			*reinterpret_cast<__int64*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<__int64*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ unsigned __int64 data)
+		{
+			*reinterpret_cast<unsigned __int64*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<unsigned __int64*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ float data)
+		{
+			*reinterpret_cast<float*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<float*>(_Controller.writePointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ double data)
+		{
+			*reinterpret_cast<double*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<double*>(_Controller.writePointer) + 1;
+		}
+
+		/* ---------------------------------------------------------------------------------------- */
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ char data)
+		{
+			*reinterpret_cast<char*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<char*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ unsigned char data)
+		{
+			*reinterpret_cast<unsigned char*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<unsigned char*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ short data)
+		{
+			*reinterpret_cast<short*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<short*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ unsigned short data)
+		{
+			*reinterpret_cast<unsigned short*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<unsigned short*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ int data)
+		{
+			*reinterpret_cast<int*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<int*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ unsigned int data)
+		{
+			*reinterpret_cast<unsigned int*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<unsigned int*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ __int64 data)
+		{
+			*reinterpret_cast<__int64*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<__int64*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ unsigned __int64 data)
+		{
+			*reinterpret_cast<unsigned __int64*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<unsigned __int64*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ float data)
+		{
+			*reinterpret_cast<float*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<float*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ double data)
+		{
+			*reinterpret_cast<double*>(_Controller.writePointer) = data;
+			_Controller.writePointer = reinterpret_cast<double*>(_Controller.writePointer) + 1;
+
+			return *this;
+		}
+
+
+		/* ---------------------------------------------------------------------------------------- */
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ char& dest)
+		{
+			dest = *reinterpret_cast<char*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<char*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ unsigned char& dest)
+		{
+			dest = *reinterpret_cast<unsigned char*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<unsigned char*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ short& dest)
+		{
+			dest = *reinterpret_cast<short*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<short*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ unsigned short& dest)
+		{
+			dest = *reinterpret_cast<unsigned short*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<unsigned short*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ int& dest)
+		{
+			dest = *reinterpret_cast<int*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<int*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ unsigned int& dest)
+		{
+			dest = *reinterpret_cast<unsigned int*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<unsigned int*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ __int64& dest)
+		{
+			dest = *reinterpret_cast<__int64*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<__int64*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ unsigned __int64& dest)
+		{
+			dest = *reinterpret_cast<unsigned __int64*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<unsigned __int64*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ float& dest)
+		{
+			dest = *reinterpret_cast<float*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<float*>(_Controller.readPointer) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ double& dest)
+		{
+			dest = *reinterpret_cast<double*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<double*>(_Controller.readPointer) + 1;
+		}
+
+		/* ---------------------------------------------------------------------------------------- */
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ char& dest)
+		{
+			dest = *reinterpret_cast<char*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<char*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ unsigned char& dest)
+		{
+			dest = *reinterpret_cast<unsigned char*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<unsigned char*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ short& dest)
+		{
+			dest = *reinterpret_cast<short*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<short*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ unsigned short& dest)
+		{
+			dest = *reinterpret_cast<unsigned short*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<unsigned short*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ int& dest)
+		{
+			dest = *reinterpret_cast<int*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<int*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ unsigned int& dest)
+		{
+			dest = *reinterpret_cast<unsigned int*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<unsigned int*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ __int64& dest)
+		{
+			dest = *reinterpret_cast<__int64*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<__int64*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ unsigned __int64& dest)
+		{
+			dest = *reinterpret_cast<unsigned __int64*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<unsigned __int64*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ float& dest)
+		{
+			dest = *reinterpret_cast<float*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<float*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ double& dest)
+		{
+			dest = *reinterpret_cast<double*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<double*>(_Controller.readPointer) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ const char* szData)
+		{
+			size_t copySize = strlen(szData) + 1;
+			memmove(_Controller.writePointer, szData, copySize);
+			_Controller.writePointer = reinterpret_cast<char*>(_Controller.writePointer) + copySize;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ const std::string& data)
+		{
+			In(data.c_str());
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ const std::string&& data)
+		{
+			In(data.c_str());
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ const wchar_t* szData)
+		{
+			size_t copySize = (wcslen(szData) << 1) + 2;
+			memmove(_Controller.writePointer, szData, copySize);
+			_Controller.writePointer = reinterpret_cast<char*>(_Controller.writePointer) + copySize;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ const std::wstring& data)
+		{
+			In(data.c_str());
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::In(_In_ const std::wstring&& data)
+		{
+			In(data.c_str());
+		}
+
+		/* ---------------------------------------------------------------------------------------- */
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ const char* szData)
+		{
+			size_t copySize = strlen(szData) + 1;
+			memmove(_Controller.writePointer, szData, copySize);
+			_Controller.writePointer = reinterpret_cast<char*>(_Controller.writePointer) + copySize;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ const std::string& data)
+		{
+			return *this << data.c_str();
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ const std::string&& data)
+		{
+			return *this << data.c_str();
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ const wchar_t* szData)
+		{
+			size_t copySize = (wcslen(szData) << 1) + 2;
+			memmove(_Controller.writePointer, szData, copySize);
+			_Controller.writePointer = reinterpret_cast<char*>(_Controller.writePointer) + copySize;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ const std::wstring& data)
+		{
+			return (*this << data.c_str());
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator<<(_In_ const std::wstring&& data)
+		{
+			return (*this << data.c_str());
+		}
+
+		/* ---------------------------------------------------------------------------------------- */
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ char*& dest)
+		{
+			dest = reinterpret_cast<char*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<char*>(_Controller.readPointer) + strlen(reinterpret_cast<char*>(_Controller.readPointer)) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ std::string& dest)
+		{
+			dest = reinterpret_cast<char*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<char*>(_Controller.readPointer) + strlen(reinterpret_cast<char*>(_Controller.readPointer)) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ wchar_t*& dest)
+		{
+			dest = reinterpret_cast<wchar_t*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<wchar_t*>(_Controller.readPointer) + wcslen(reinterpret_cast<wchar_t*>(_Controller.readPointer)) + 1;
+		}
+
+		template<std::size_t cbSize>
+		inline void CSerializedBuffer<cbSize>::Out(_Inout_ std::wstring& dest)
+		{
+			dest = reinterpret_cast<wchar_t*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<wchar_t*>(_Controller.readPointer) + wcslen(reinterpret_cast<wchar_t*>(_Controller.readPointer)) + 1;
+		}
+
+		/* ---------------------------------------------------------------------------------------- */
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ char*& dest)
+		{
+			dest = reinterpret_cast<char*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<char*>(_Controller.readPointer) + strlen(reinterpret_cast<char*>(_Controller.readPointer)) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ std::string& dest)
+		{
+			dest = reinterpret_cast<char*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<char*>(_Controller.readPointer) + strlen(reinterpret_cast<char*>(_Controller.readPointer)) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ wchar_t*& dest)
+		{
+			dest = reinterpret_cast<wchar_t*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<wchar_t*>(_Controller.readPointer) + wcslen(reinterpret_cast<wchar_t*>(_Controller.readPointer)) + 1;
+
+			return *this;
+		}
+
+		template<std::size_t cbSize>
+		inline CSerializedBuffer<cbSize>& CSerializedBuffer<cbSize>::operator>>(_Inout_ std::wstring& dest)
+		{
+			dest = reinterpret_cast<wchar_t*>(_Controller.readPointer);
+			_Controller.readPointer = reinterpret_cast<wchar_t*>(_Controller.readPointer) + wcslen(reinterpret_cast<wchar_t*>(_Controller.readPointer)) + 1;
+
+			return *this;
+		}
+	}
+}
+
+#define ConvertToCompatiblePointer(_Ref) reinterpret_cast<SJNET::LIB::CSerializedBuffer<SERIALIZED_BUFFER_DEFAULT_SIZE>*>(&_Ref)
+typedef SJNET::LIB::CSerializedBuffer<SERIALIZED_BUFFER_DEFAULT_SIZE>* PSERIALIZED_BUFFER;
+
+#endif // !__C_SERIALIZED_BUFFER_H__
