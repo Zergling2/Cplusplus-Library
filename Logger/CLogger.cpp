@@ -61,7 +61,7 @@ bool SJNET::LIB::CFileLogger::WriteLog(const wchar_t* logString, LogType type)
 		fwprintf(logFileStream, L"[NETWORK I/O] %s\n", logString);
 		break;
 	default:
-		fwprintf(logFileStream, L"[UNDEFINED] %s\n", logString);
+		fwprintf(logFileStream, L"%s\n", logString);
 		break;
 	}
 

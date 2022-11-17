@@ -5,14 +5,15 @@
 
 enum class LogType
 {
-	LT_NONE,
+	LT_SYSTEM,
 	LT_INFO,
 	LT_CRITICAL,
 	LT_ERROR,
 	LT_WARNING,
 	LT_FAIL,
 	LT_LAST_ERROR,
-	LT_NETWORK
+	LT_NETWORK,
+	LT_NO_PREFIX
 };
 
 namespace SJNET
