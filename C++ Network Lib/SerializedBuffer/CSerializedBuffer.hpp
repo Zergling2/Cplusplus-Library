@@ -1,18 +1,13 @@
-#ifndef __C_SERIALIZED_BUFFER_H__
-#define __C_SERIALIZED_BUFFER_H__
+/*
+* (WARNING!) It is not safe for buffer overflow. Please handle it by the user.
+*/
+
+#pragma once
 
 #pragma warning (disable:26495)
 
-// Definitions of common types
-#ifdef _WIN64
-typedef unsigned __int64 size_t;
-typedef __int64          ptrdiff_t;
-typedef __int64          intptr_t;
-#else
-typedef unsigned int     size_t;
-typedef int              ptrdiff_t;
-typedef int              intptr_t;
-#endif
+#define _WINSOCKAPI_
+#include <Windows.h>
 
 namespace SJNET
 {
@@ -478,4 +473,4 @@ namespace SJNET
 	}
 }
 
-#endif // !__C_SERIALIZED_BUFFER_H__
+#undef _WINSOCKAPI_
