@@ -36,8 +36,8 @@ bool SJNET::LIB::CFileLogger::WriteLog(const wchar_t* logString, LogType type)
 
 	switch (type)
 	{
-	case LogType::LT_NONE:
-		fwprintf(logFileStream, L"[NONE] %s\n", logString);
+	case LogType::LT_SYSTEM:
+		fwprintf(logFileStream, L"[SYSTEM] %s\n", logString);
 		break;
 	case LogType::LT_INFO:
 		fwprintf(logFileStream, L"[INFO] %s\n", logString);
@@ -93,13 +93,13 @@ void SJNET::LIB::CConsoleLogger::WriteLog(const wchar_t* logString, LogType type
 {
 	switch (type)
 	{
-	case LogType::LT_NONE:
+	case LogType::LT_SYSTEM:
 		if (currentColor != ColorType::GRAY)
 		{
 			currentColor = ColorType::GRAY;
 			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), static_cast<WORD>(currentColor));
 		}
-		wprintf(L"[NONE] %s\n", logString);
+		wprintf(L"[SYSTEM] %s\n", logString);
 		break;
 	case LogType::LT_INFO:
 		if (currentColor != ColorType::GREEN)
@@ -163,7 +163,7 @@ void SJNET::LIB::CConsoleLogger::WriteLog(const wchar_t* logString, LogType type
 			currentColor = ColorType::WHITE;
 			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), static_cast<WORD>(currentColor));
 		}
-		wprintf(L"[UNDEFINED] %s\n", logString);
+		wprintf(L"%s\n", logString);
 		break;
 	}
 }
