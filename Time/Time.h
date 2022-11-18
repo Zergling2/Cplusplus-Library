@@ -1,6 +1,5 @@
 #pragma once
 
-#pragma comment(lib, "winmm.lib")
 #define _WINSOCKAPI_
 #include <Windows.h>
 
