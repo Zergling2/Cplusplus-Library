@@ -1,4 +1,4 @@
-#include "CTime.h"
+#include "Time.h"
 
 CTime::CTime()
 	: dwDeltaTime(0)

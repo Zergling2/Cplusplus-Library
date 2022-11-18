@@ -1,5 +1,4 @@
-#ifndef __C_LOGGER_H__
-#define __C_LOGGER_H__
+#pragma once
 
 #include <string>
 
@@ -62,5 +61,3 @@ namespace SJNET
 		};
 	}
 }
-
-#endif // !__C_LOGGER_H__

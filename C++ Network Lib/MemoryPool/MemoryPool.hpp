@@ -5,12 +5,8 @@
 #define _WINSOCKAPI_
 #include <Windows.h>
 #include <strsafe.h>
-#include "CLogger.h"
+#include "Logger.h"
 #include "ForceCrash.h"
-
-constexpr DWORD flOptions = 0;
-constexpr SIZE_T dwInitialSize = 4096 * 16;
-constexpr SIZE_T dwMaximumSize = 0;
 
 class CSession;
 
@@ -34,7 +30,6 @@ namespace SJNET
 			static void GetObjectErrorCrash();
 			static void ReturnObjectErrorCrash(ULONG_PTR llWrongVerificationCode);
 			Node* _Top;
-			SRWLOCK stSRWLock;
 			static CMemoryPool<ObjectType>* pInstance;
 			static ULONG_PTR _VerificationCode;
 			static HANDLE _HeapHandle;
@@ -75,7 +70,6 @@ namespace SJNET
 		CMemoryPool<ObjectType>::CMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
 			: _Top(nullptr)
 		{
-			InitializeSRWLock(&this->stSRWLock);
 			CMemoryPool<ObjectType>::_VerificationCode = reinterpret_cast<ULONG_PTR>(this);
 			if (CMemoryPool<ObjectType>::_HeapHandle == NULL)
 			{
@@ -94,12 +88,10 @@ namespace SJNET
 		template<typename ...Types>
 		ObjectType* CMemoryPool<ObjectType>::GetObjectFromPool(Types ...args)
 		{
-			AcquireSRWLockExclusive(&this->stSRWLock);
 			Node* pTmp = nullptr;		// 최대 최적화 (속도 우선) 사용 시 nullptr 대입 코드 삭제 가능.
 
 			if (!(this->_Top))
 			{
-				ReleaseSRWLockExclusive(&this->stSRWLock);
 				try
 				{
 					pTmp = new Node(args...);
@@ -115,44 +107,10 @@ namespace SJNET
 			{
 				pTmp = this->_Top;
 				this->_Top = this->_Top->below;
-				ReleaseSRWLockExclusive(&this->stSRWLock);
 				new (pTmp) ObjectType(args...);		// placement new
 				return reinterpret_cast<ObjectType*>(pTmp);
 			}
 		}
-
-		// ----------------------------------------- CSession 특수화 -----------------------------------------
-		template<>
-		template<typename ...Types>
-		CSession* CMemoryPool<CSession>::GetObjectFromPool(Types ...args)
-		{
-			AcquireSRWLockExclusive(&this->stSRWLock);
-			Node* pTmp = nullptr;		// 최대 최적화 (속도 우선) 사용 시 nullptr 대입 코드 삭제 가능.
-
-			if (!(this->_Top))
-			{
-				ReleaseSRWLockExclusive(&this->stSRWLock);
-				try
-				{
-					pTmp = new Node(true, args...);
-				}
-				catch (std::bad_alloc& e)
-				{
-					UNREFERENCED_PARAMETER(e);
-					CMemoryPool<CSession>::GetObjectErrorCrash();
-				}
-				return reinterpret_cast<CSession*>(pTmp);
-			}
-			else
-			{
-				pTmp = this->_Top;
-				this->_Top = this->_Top->below;
-				ReleaseSRWLockExclusive(&this->stSRWLock);
-				new (pTmp) CSession(false, args...);		// placement new
-				return reinterpret_cast<CSession*>(pTmp);
-			}
-		}
-		// ----------------------------------------- CSession 특수화 -----------------------------------------
 
 		// 메모리 풀로 반환되는 객체에는 무조건 소멸자 호출
 		template<typename ObjectType>
@@ -163,11 +121,9 @@ namespace SJNET
 
 			_Ret->~ObjectType();
 
-			AcquireSRWLockExclusive(&this->stSRWLock);
 			Node* prevTop = this->_Top;
 			this->_Top = reinterpret_cast<Node*>(_Ret);
 			this->_Top->below = prevTop;
-			ReleaseSRWLockExclusive(&this->stSRWLock);
 		}
 
 		template<typename ObjectType>

@@ -7,7 +7,7 @@ typedef unsigned long long MEMADDR;
 typedef unsigned int MEMADDR;
 #endif
 
-inline void ForceCrash(_In_ int crashValue, _In_opt_ MEMADDR address = 0x00000001)
+inline void ForceCrash(int crashValue, MEMADDR address = 0x00000001)
 {
 	*(int*)address = crashValue;
 }

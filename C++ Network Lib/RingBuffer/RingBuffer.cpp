@@ -1,5 +1,5 @@
-#include "CRingBuffer.h"
-#include "CLogger.h"
+#include "RingBuffer.h"
+#include "Logger.h"
 #include "ForceCrash.h"
 
 using namespace SJNET::LIB;

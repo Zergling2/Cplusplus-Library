@@ -1,4 +1,4 @@
-#include "CLogger.h"
+#include "Logger.h"
 
 #include <Windows.h>
 #include <time.h>

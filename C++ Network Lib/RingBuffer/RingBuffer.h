@@ -1,5 +1,4 @@
-#ifndef __C_RING_BUFFER_H__
-#define __C_RING_BUFFER_H__
+#pragma once
 
 #define _WINSOCKAPI_
 #include <Windows.h>
@@ -67,6 +66,7 @@ namespace SJNET
 			inline void MoveWritePointer(size_t offset);
 			inline char* GetReadPointer() const { return readPointer; }
 			inline char* GetWritePointer() const { return writePointer; }
+			inline char* GetBufferBeginAddress() const { return bufferBeginAddress; }
 			inline void ClearBuffer() { readPointer = writePointer; }
 		private:
 			char* bufferBeginAddress;
@@ -151,5 +151,3 @@ namespace SJNET
 }
 
 #undef _WINSOCKAPI_
-
-#endif // !__C_RING_BUFFER_H__

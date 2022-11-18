@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "CSerializedBuffer.hpp"
+#include "SerializedBuffer.hpp"
 #include <string>
 
 namespace SJNET
