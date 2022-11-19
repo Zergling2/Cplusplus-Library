@@ -8,13 +8,25 @@
 #include "Logger.h"
 #include "ForceCrash.h"
 
+// ---------------- Option -------------------
+constexpr DWORD flOptions = 0;
+constexpr SIZE_T dwInitialSize = 4096 * 16;
+constexpr SIZE_T dwMaximumSize = 0;
+// -------------------------------------------
+
 class CSession;
+
+enum class DestructorCallOption
+{
+	WHEN_RETURNED_TO_POOL,
+	WHEN_MEMORY_POOL_IS_DESTROYED
+};
 
 namespace SJNET
 {
 	namespace LIB
 	{
-		template<typename ObjectType>
+		template<typename ObjectType, DestructorCallOption opt>
 		class CMemoryPool
 		{
 		private:
@@ -30,7 +42,7 @@ namespace SJNET
 			static void GetObjectErrorCrash();
 			static void ReturnObjectErrorCrash(ULONG_PTR llWrongVerificationCode);
 			Node* _Top;
-			static CMemoryPool<ObjectType>* pInstance;
+			static CMemoryPool<ObjectType, opt>* pInstance;
 			static ULONG_PTR _VerificationCode;
 			static HANDLE _HeapHandle;
 			static DWORD _HeapOptions;
@@ -39,6 +51,7 @@ namespace SJNET
 			{
 			public:
 				template<typename... Types> Node(Types ...args);
+				~Node();
 				void* operator new(size_t size);
 				void operator delete(void* _Block);
 				ObjectType object;
@@ -47,46 +60,29 @@ namespace SJNET
 			};
 		};
 
-		template<typename ObjectType>
-		inline CMemoryPool<ObjectType>* CMemoryPool<ObjectType>::GetInstance()
+
+		template<typename ObjectType, DestructorCallOption opt>
+		inline CMemoryPool<ObjectType, opt>* CMemoryPool<ObjectType, opt>::GetInstance()
 		{
-			if (CMemoryPool<ObjectType>::pInstance == nullptr)
+			if (CMemoryPool<ObjectType, opt>::pInstance == nullptr)
 			{
-				CMemoryPool<ObjectType>::pInstance = new CMemoryPool<ObjectType>(flOptions, dwInitialSize, dwMaximumSize);
-				atexit(CMemoryPool<ObjectType>::Destroy);
+				CMemoryPool<ObjectType, opt>::pInstance = new CMemoryPool<ObjectType, opt>(flOptions, dwInitialSize, dwMaximumSize);
+				atexit(CMemoryPool<ObjectType, opt>::Destroy);
 			}
 
-			return CMemoryPool<ObjectType>::pInstance;
+			return CMemoryPool<ObjectType, opt>::pInstance;
 		}
 
-		template<typename ObjectType>
-		inline void CMemoryPool<ObjectType>::Destroy()
+		template<typename ObjectType, DestructorCallOption opt>
+		inline void CMemoryPool<ObjectType, opt>::Destroy()
 		{
-			delete CMemoryPool<ObjectType>::pInstance;
-			CMemoryPool<ObjectType>::pInstance = nullptr;
+			delete CMemoryPool<ObjectType, opt>::pInstance;
+			CMemoryPool<ObjectType, opt>::pInstance = nullptr;
 		}
 
-		template<typename ObjectType>
-		CMemoryPool<ObjectType>::CMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
-			: _Top(nullptr)
-		{
-			CMemoryPool<ObjectType>::_VerificationCode = reinterpret_cast<ULONG_PTR>(this);
-			if (CMemoryPool<ObjectType>::_HeapHandle == NULL)
-			{
-				CMemoryPool<ObjectType>::_HeapHandle = HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
-				CMemoryPool<ObjectType>::_HeapOptions = flOptions;
-			}
-		}
-
-		template<typename ObjectType>
-		CMemoryPool<ObjectType>::~CMemoryPool()
-		{
-			HeapDestroy(CMemoryPool<ObjectType>::_HeapHandle);
-		}
-
-		template<typename ObjectType>
+		template<typename ObjectType, DestructorCallOption opt>
 		template<typename ...Types>
-		ObjectType* CMemoryPool<ObjectType>::GetObjectFromPool(Types ...args)
+		inline ObjectType* CMemoryPool<ObjectType, opt>::GetObjectFromPool(Types ...args)
 		{
 			Node* pTmp = nullptr;		// 최대 최적화 (속도 우선) 사용 시 nullptr 대입 코드 삭제 가능.
 
@@ -99,7 +95,7 @@ namespace SJNET
 				catch (std::bad_alloc& e)
 				{
 					UNREFERENCED_PARAMETER(e);
-					CMemoryPool<ObjectType>::GetObjectErrorCrash();
+					CMemoryPool<ObjectType, opt>::GetObjectErrorCrash();
 				}
 				return reinterpret_cast<ObjectType*>(pTmp);
 			}
@@ -112,22 +108,52 @@ namespace SJNET
 			}
 		}
 
-		// 메모리 풀로 반환되는 객체에는 무조건 소멸자 호출
-		template<typename ObjectType>
-		void CMemoryPool<ObjectType>::ReturnObjectToPool(ObjectType* _Ret)
+		template<typename ObjectType, DestructorCallOption opt>
+		inline void CMemoryPool<ObjectType, opt>::ReturnObjectToPool(ObjectType* _Ret)
 		{
 			if (reinterpret_cast<Node*>(_Ret)->verificationCode != this->_VerificationCode)
-				CMemoryPool<ObjectType>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(_Ret)->verificationCode);
+				CMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(_Ret)->verificationCode);
 
-			_Ret->~ObjectType();
+			if constexpr (opt == DestructorCallOption::WHEN_RETURNED_TO_POOL)
+				_Ret->~ObjectType();
 
 			Node* prevTop = this->_Top;
 			this->_Top = reinterpret_cast<Node*>(_Ret);
 			this->_Top->below = prevTop;
 		}
 
-		template<typename ObjectType>
-		inline void CMemoryPool<ObjectType>::GetObjectErrorCrash()
+		template<typename ObjectType, DestructorCallOption opt>
+		CMemoryPool<ObjectType, opt>::CMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
+			: _Top(nullptr)
+		{
+			CMemoryPool<ObjectType, opt>::_VerificationCode = reinterpret_cast<ULONG_PTR>(this);
+			if (CMemoryPool<ObjectType, opt>::_HeapHandle == NULL)
+			{
+				CMemoryPool<ObjectType, opt>::_HeapHandle = HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
+				CMemoryPool<ObjectType, opt>::_HeapOptions = flOptions;
+			}
+		}
+
+		template<typename ObjectType, DestructorCallOption opt>
+		inline CMemoryPool<ObjectType, opt>::~CMemoryPool()
+		{
+			if constexpr (opt == DestructorCallOption::WHEN_MEMORY_POOL_IS_DESTROYED)
+			{
+				Node* pCursor = this->_Top;
+				Node* pTemp;
+				while (pCursor != nullptr)
+				{
+					pTemp = pCursor->below;
+					delete pCursor;
+					pCursor = pTemp;
+				}
+			}
+
+			HeapDestroy(CMemoryPool<ObjectType, opt>::_HeapHandle);
+		}
+
+		template<typename ObjectType, DestructorCallOption opt>
+		inline void CMemoryPool<ObjectType, opt>::GetObjectErrorCrash()
 		{
 			SJNET::LIB::CFileLogger fLogger(L"CMemoryPool_MT Error_", true);
 			wchar_t logBuffer[128];
@@ -136,8 +162,8 @@ namespace SJNET
 			ForceCrash(0xABABABAB);
 		}
 
-		template<typename ObjectType>
-		inline void CMemoryPool<ObjectType>::ReturnObjectErrorCrash(ULONG_PTR llWrongVerificationCode)
+		template<typename ObjectType, DestructorCallOption opt>
+		inline void CMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(ULONG_PTR llWrongVerificationCode)
 		{
 			SJNET::LIB::CFileLogger fLogger(L"CMemoryPool Error_", true);
 			wchar_t logBuffer[128];
@@ -146,38 +172,42 @@ namespace SJNET
 			ForceCrash(0xABABABAB);
 		}
 
-		template<typename ObjectType>
+		template<typename ObjectType, DestructorCallOption opt>
 		template<typename ...Types>
-		inline CMemoryPool<ObjectType>::Node::Node(Types ...args)
-			: verificationCode(CMemoryPool<ObjectType>::_VerificationCode)
+		inline CMemoryPool<ObjectType, opt>::Node::Node(Types ...args)
+			: verificationCode(CMemoryPool<ObjectType, opt>::_VerificationCode)
 			, object(args...)
 		{
 		}
 
-		template<typename ObjectType>
-		inline void* CMemoryPool<ObjectType>::Node::operator new(size_t size)
+		template<typename ObjectType, DestructorCallOption opt>
+		inline CMemoryPool<ObjectType, opt>::Node::~Node()
 		{
-			return HeapAlloc(CMemoryPool<ObjectType>::_HeapHandle, CMemoryPool<ObjectType>::_HeapOptions, size);
 		}
 
-		template<typename ObjectType>
-		inline void CMemoryPool<ObjectType>::Node::operator delete(void* _Block)
+		template<typename ObjectType, DestructorCallOption opt>
+		inline void* CMemoryPool<ObjectType, opt>::Node::operator new(size_t size)
 		{
-			HeapFree(CMemoryPool<ObjectType>::_HeapHandle, 0, _Block);
+			return HeapAlloc(CMemoryPool<ObjectType, opt>::_HeapHandle, CMemoryPool<ObjectType, opt>::_HeapOptions, size);
 		}
 
-		// --------------------------------------------------------------------------------------
-		template<typename ObjectType>
-		CMemoryPool<ObjectType>* CMemoryPool<ObjectType>::pInstance = nullptr;
+		template<typename ObjectType, DestructorCallOption opt>
+		inline void CMemoryPool<ObjectType, opt>::Node::operator delete(void* _Block)
+		{
+			HeapFree(CMemoryPool<ObjectType, opt>::_HeapHandle, 0, _Block);
+		}
 
-		template<typename ObjectType>
-		ULONG_PTR CMemoryPool<ObjectType>::_VerificationCode = -1;
+		template<typename ObjectType, DestructorCallOption opt>
+		CMemoryPool<ObjectType, opt>* CMemoryPool<ObjectType, opt>::pInstance = nullptr;
 
-		template<typename ObjectType>
-		HANDLE CMemoryPool<ObjectType>::_HeapHandle = NULL;
+		template<typename ObjectType, DestructorCallOption opt>
+		ULONG_PTR CMemoryPool<ObjectType, opt>::_VerificationCode = -1;
 
-		template<typename ObjectType>
-		DWORD CMemoryPool<ObjectType>::_HeapOptions = flOptions;
+		template<typename ObjectType, DestructorCallOption opt>
+		HANDLE CMemoryPool<ObjectType, opt>::_HeapHandle = NULL;
+
+		template<typename ObjectType, DestructorCallOption opt>
+		DWORD CMemoryPool<ObjectType, opt>::_HeapOptions = flOptions;
 	}
 }
 

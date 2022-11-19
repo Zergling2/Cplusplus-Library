@@ -69,11 +69,11 @@ namespace SJNET
 			inline char* GetBufferBeginAddress() const { return bufferBeginAddress; }
 			inline void ClearBuffer() { readPointer = writePointer; }
 		private:
+			size_t bufferSize;
 			char* bufferBeginAddress;
 			char* bufferEndAddress;
-			size_t bufferSize;
-			char* readPointer;
-			alignas(64) char* writePointer;
+			alignas(64) char* readPointer;
+			char* writePointer;
 		};
 
 		inline size_t CRingBuffer::GetBufferSize() const
