@@ -4,6 +4,7 @@
 #include <DbgHelp.h>
 #include "Logger.h"
 
+CDumper CDumper::_Instance;
 long CDumper::lDumpCount = 0;
 
 CDumper::CDumper()
@@ -21,12 +22,9 @@ CDumper::CDumper()
 
 	_CrtSetReportHook(CustomReportHook);
 
-	// ----------------------------------------------
-	// purecall 핸들러를 사용자 정의 함수로 대체한다.
-	// ----------------------------------------------
-	_set_purecall_handler(CustomPurecallHandler);
+	_set_purecall_handler(CustomPurecallHandler);		// purecall 핸들러를 사용자 정의 함수로 대체한다.
 
-	SetHandlerDump();
+	SetUnhandledExceptionFilter(CustomExceptionFilter);	// 처리되지 않은 예외 필터를 사용자 정의 함수로 대체한다.
 }
 
 void CDumper::Crash()
@@ -70,11 +68,6 @@ LONG CALLBACK CDumper::CustomExceptionFilter(_In_ PEXCEPTION_POINTERS pException
 	}
 
 	return EXCEPTION_EXECUTE_HANDLER;
-}
-
-void CDumper::SetHandlerDump()
-{
-	SetUnhandledExceptionFilter(CustomExceptionFilter);
 }
 
 void CDumper::CustomInvalidParameterHandler(const wchar_t* szExpression, const wchar_t* szFunction, const wchar_t* szFile, unsigned int line, uintptr_t pReserved)
