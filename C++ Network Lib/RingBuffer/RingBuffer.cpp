@@ -11,7 +11,7 @@ CRingBuffer::CRingBuffer(size_t size)
 
 	if (!bufferBeginAddress)
 	{
-		SJNET::LIB::CFileLogger fLogger(L"CRingBuffer_Error_", true);
+		SJAPI::CFileLogger fLogger(L"CRingBuffer_Error_", true);
 		fLogger.WriteLog(L"std::bad_alloc exception!", LogType::LT_CRITICAL);
 
 		ForceCrash(0x78563412);
