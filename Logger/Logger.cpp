@@ -5,28 +5,28 @@
 #include <strsafe.h>
 #pragma warning(disable : 6387)
 
-SJNET::LIB::ColorType SJNET::LIB::CConsoleLogger::currentColor = SJNET::LIB::ColorType::DARK_GRAY;
+SJAPI::ColorType SJAPI::CConsoleLogger::currentColor = SJAPI::ColorType::DARK_GRAY;
 
-SJNET::LIB::CFileLogger::CFileLogger(const std::wstring& logFileName, bool bAppendTimeToFileName) :
+SJAPI::CFileLogger::CFileLogger(const std::wstring& logFileName, bool bAppendTimeToFileName) :
 	logFileName(logFileName)
 {
 	if (bAppendTimeToFileName)
 		AppendTimeToFileName();
 }
 
-SJNET::LIB::CFileLogger::CFileLogger(const wchar_t* logFileName, bool bAppendTimeToFileName) :
+SJAPI::CFileLogger::CFileLogger(const wchar_t* logFileName, bool bAppendTimeToFileName) :
 	logFileName(logFileName)
 {
 	if (bAppendTimeToFileName)
 		AppendTimeToFileName();
 }
 
-bool SJNET::LIB::CFileLogger::WriteLog(const std::wstring& logString, LogType type)
+bool SJAPI::CFileLogger::WriteLog(const std::wstring& logString, LogType type)
 {
 	return WriteLog(logString.c_str(), type);
 }
 
-bool SJNET::LIB::CFileLogger::WriteLog(const wchar_t* logString, LogType type)
+bool SJAPI::CFileLogger::WriteLog(const wchar_t* logString, LogType type)
 {
 	FILE* logFileStream;
 	errno_t e = _wfopen_s(&logFileStream, logFileName.c_str(), L"at");
@@ -70,7 +70,7 @@ bool SJNET::LIB::CFileLogger::WriteLog(const wchar_t* logString, LogType type)
 	return true;
 }
 
-void SJNET::LIB::CFileLogger::AppendTimeToFileName()
+void SJAPI::CFileLogger::AppendTimeToFileName()
 {
 	time_t base_time = time(NULL);
 	tm base_date_local;
@@ -84,12 +84,12 @@ void SJNET::LIB::CFileLogger::AppendTimeToFileName()
 	logFileName.append(buffer);
 }
 
-void SJNET::LIB::CConsoleLogger::WriteLog(const std::wstring& logString, LogType type)
+void SJAPI::CConsoleLogger::WriteLog(const std::wstring& logString, LogType type)
 {
-	SJNET::LIB::CConsoleLogger::WriteLog(logString.c_str(), type);
+	SJAPI::CConsoleLogger::WriteLog(logString.c_str(), type);
 }
 
-void SJNET::LIB::CConsoleLogger::WriteLog(const wchar_t* logString, LogType type)
+void SJAPI::CConsoleLogger::WriteLog(const wchar_t* logString, LogType type)
 {
 	switch (type)
 	{
