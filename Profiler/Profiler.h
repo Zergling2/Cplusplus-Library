@@ -1,13 +1,10 @@
-#ifndef __PROFILER_H__
-#define __PROFILER_H__
+#pragma once
 
-#include <stdio.h>
 #include <string>
 #include <map>
-#include <locale.h>
+#define _WINSOCKAPI_
 #include <Windows.h>
-#include <strsafe.h>
-#include <time.h>
+#undef _WINSOCKAPI_
 
 class Profiler
 {
@@ -48,5 +45,3 @@ inline void Profiler::EndRecord(const wchar_t* szTag)
 
     RecordEndRequestHandler(szTag, endTime);
 }
-
-#endif // !__PROFILER_H__

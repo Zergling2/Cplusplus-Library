@@ -1,4 +1,5 @@
 #include "ConsoleScreen.h"
+#include <stdio.h>
 
 void ConsoleScreen::ConsoleInitialize(void)
 {

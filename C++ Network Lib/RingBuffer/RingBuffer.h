@@ -2,6 +2,7 @@
 
 #define _WINSOCKAPI_
 #include <Windows.h>
+#undef _WINSOCKAPI_
 
 #ifdef _WIN64
 typedef long long RB_RESULT;
@@ -149,5 +150,3 @@ namespace SJNET
 		}
 	}
 }
-
-#undef _WINSOCKAPI_

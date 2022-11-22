@@ -4,6 +4,7 @@
 
 #define _WINSOCKAPI_
 #include <Windows.h>
+#undef _WINSOCKAPI_
 #include <strsafe.h>
 #include "Logger.h"
 #include "ForceCrash.h"
@@ -212,5 +213,3 @@ namespace SJNET
 }
 
 #pragma warning(default:26495)
-
-#undef _WINSOCKAPI_

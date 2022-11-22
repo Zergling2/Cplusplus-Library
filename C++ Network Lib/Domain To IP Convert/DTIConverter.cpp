@@ -1,5 +1,10 @@
 #include "DTIConverter.h"
 
+#pragma comment (lib, "Ws2_32.lib")
+#include <winsock2.h>
+#include <WS2tcpip.h>
+#include <stdio.h>
+
 BOOL DomainToIPW(const wchar_t* szDomain, IN_ADDR* pAddr)
 {
 	WSADATA wsa;
@@ -38,7 +43,7 @@ void PrintDomainIPW(const wchar_t* szDomain)
 	while (pAddrInfo != NULL)
 	{
 		addrInfo = ((SOCKADDR_IN*)pAddrInfo->ai_addr)->sin_addr;
-		printf("%d.%d.%d.%d\n", addrInfo.S_un.S_un_b.s_b1, addrInfo.S_un.S_un_b.s_b2, addrInfo.S_un.S_un_b.s_b3, addrInfo.S_un.S_un_b.s_b4);
+		wprintf(L"%d.%d.%d.%d\n", addrInfo.S_un.S_un_b.s_b1, addrInfo.S_un.S_un_b.s_b2, addrInfo.S_un.S_un_b.s_b3, addrInfo.S_un.S_un_b.s_b4);
 		pAddrInfo = pAddrInfo->ai_next;
 	}
 

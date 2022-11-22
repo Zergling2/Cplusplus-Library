@@ -1,6 +1,11 @@
 #pragma warning (disable:6387)
 #include "Profiler.h"
 
+#include <strsafe.h>
+#include <time.h>
+#include <locale.h>
+#include <stdio.h>
+
 Profiler::Profiler()
 {
     _wsetlocale(LC_ALL, L"ko-KR");

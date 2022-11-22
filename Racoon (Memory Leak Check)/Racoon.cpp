@@ -1,9 +1,8 @@
 #include "Racoon.h"
 
-#include <iostream>
+#include <stdio.h>
 #include <stdlib.h>
 #include <strsafe.h>
-#include <tchar.h>
 #include <time.h>
 
 #undef new	// Remove the define statement of 'new' created in 'Racoon.h' file.
@@ -145,11 +144,7 @@ void Racoon::Record(void* arg, LogType logType)
 	errno_t e = _tfopen_s(&fp, logFileName, _T("at"));
 	if (e == 0)
 	{
-#if defined _UNICODE
-		fputws(logMsg, fp);
-#else
-		fputs(logMsg, fp);
-#endif
+		_fputts(logMsg, fp);
 		fclose(fp);
 	}
 	else

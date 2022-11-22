@@ -1,11 +1,6 @@
-#ifndef __RACOON_MEMORY_LEAK_DETECTION_H__
-#define __RACOON_MEMORY_LEAK_DETECTION_H__
+#pragma once
 
-#if defined _UNICODE
-typedef wchar_t TCHAR;
-#else
-typedef char TCHAR;
-#endif
+#include <tchar.h>
 
 #define MAX_PATH 260
 #define LOG_LENGTH 400
@@ -62,5 +57,3 @@ void operator delete[](void* p, const TCHAR* fileName, int lineNumber);
 #else
 	#define new new(__FILE__, __LINE__)
 #endif
-
-#endif // !__RACOON_MEMORY_LEAK_DETECTION_H__

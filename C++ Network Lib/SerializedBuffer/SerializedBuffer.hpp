@@ -8,6 +8,7 @@
 
 #define _WINSOCKAPI_
 #include <Windows.h>
+#undef _WINSOCKAPI_
 
 namespace SJNET
 {
@@ -472,5 +473,3 @@ namespace SJNET
 		/* ---------------------------------------------------------------------------------------- */
 	}
 }
-
-#undef _WINSOCKAPI_

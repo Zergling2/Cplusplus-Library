@@ -2,6 +2,7 @@
 
 #define _WINSOCKAPI_
 #include <Windows.h>
+#undef _WINSOCKAPI_
 
 #define ONE_SECOND_IN_MILLISECONDS ((DWORD)(1000))
 
@@ -30,5 +31,3 @@ inline DWORD CTime::GetDeltaTime()
 {
 	return this->dwDeltaTime;
 }
-
-#undef _WINSOCKAPI_
