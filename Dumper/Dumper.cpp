@@ -45,8 +45,8 @@ LONG CALLBACK CDumper::CustomExceptionFilter(_In_ PEXCEPTION_POINTERS pException
 	wsprintfW(szFileName, L"Dump_%d%02d%02d_%02dh%02dm%02ds_%d.dmp",
 		stCurrentTime.wYear, stCurrentTime.wMonth, stCurrentTime.wDay, stCurrentTime.wHour, stCurrentTime.wMinute, stCurrentTime.wSecond, lDumpCount);
 
-	SJAPI::CConsoleLogger::WriteLog(L"Crash Error!!!", LogType::LT_CRITICAL);
-	SJAPI::CConsoleLogger::WriteLog(L"Saving dump file...", LogType::LT_SYSTEM);
+	SJNET::API::CConsoleLogger::WriteLog(L"Crash Error!!!", LogType::LT_CRITICAL);
+	SJNET::API::CConsoleLogger::WriteLog(L"Saving dump file...", LogType::LT_SYSTEM);
 
 	HANDLE hDumpFile = CreateFile(szFileName, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hDumpFile != INVALID_HANDLE_VALUE)
@@ -60,11 +60,11 @@ LONG CALLBACK CDumper::CustomExceptionFilter(_In_ PEXCEPTION_POINTERS pException
 		MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDumpFile, MiniDumpWithFullMemory,
 			&stMinidumpExceptionInformation, NULL, NULL);
 		CloseHandle(hDumpFile);
-		SJAPI::CConsoleLogger::WriteLog(L"Dump file saved successfully.", LogType::LT_SYSTEM);
+		SJNET::API::CConsoleLogger::WriteLog(L"Dump file saved successfully.", LogType::LT_SYSTEM);
 	}
 	else
 	{
-		SJAPI::CConsoleLogger::WriteLog(L"Failed to save dump file!", LogType::LT_FAIL);
+		SJNET::API::CConsoleLogger::WriteLog(L"Failed to save dump file!", LogType::LT_FAIL);
 	}
 
 	return EXCEPTION_EXECUTE_HANDLER;

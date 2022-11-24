@@ -5,28 +5,30 @@
 #include <strsafe.h>
 #pragma warning(disable : 6387)
 
-SJAPI::ColorType SJAPI::CConsoleLogger::currentColor = SJAPI::ColorType::DARK_GRAY;
+using namespace SJNET::API;
 
-SJAPI::CFileLogger::CFileLogger(const std::wstring& logFileName, bool bAppendTimeToFileName) :
+ColorType CConsoleLogger::currentColor = ColorType::DARK_GRAY;
+
+CFileLogger::CFileLogger(const std::wstring& logFileName, bool bAppendTimeToFileName) :
 	logFileName(logFileName)
 {
 	if (bAppendTimeToFileName)
 		AppendTimeToFileName();
 }
 
-SJAPI::CFileLogger::CFileLogger(const wchar_t* logFileName, bool bAppendTimeToFileName) :
+CFileLogger::CFileLogger(const wchar_t* logFileName, bool bAppendTimeToFileName) :
 	logFileName(logFileName)
 {
 	if (bAppendTimeToFileName)
 		AppendTimeToFileName();
 }
 
-bool SJAPI::CFileLogger::WriteLog(const std::wstring& logString, LogType type)
+bool CFileLogger::WriteLog(const std::wstring& logString, LogType type)
 {
 	return WriteLog(logString.c_str(), type);
 }
 
-bool SJAPI::CFileLogger::WriteLog(const wchar_t* logString, LogType type)
+bool CFileLogger::WriteLog(const wchar_t* logString, LogType type)
 {
 	FILE* logFileStream;
 	errno_t e = _wfopen_s(&logFileStream, logFileName.c_str(), L"at");
@@ -70,7 +72,7 @@ bool SJAPI::CFileLogger::WriteLog(const wchar_t* logString, LogType type)
 	return true;
 }
 
-void SJAPI::CFileLogger::AppendTimeToFileName()
+void CFileLogger::AppendTimeToFileName()
 {
 	time_t base_time = time(NULL);
 	tm base_date_local;
@@ -84,12 +86,12 @@ void SJAPI::CFileLogger::AppendTimeToFileName()
 	logFileName.append(buffer);
 }
 
-void SJAPI::CConsoleLogger::WriteLog(const std::wstring& logString, LogType type)
+void CConsoleLogger::WriteLog(const std::wstring& logString, LogType type)
 {
-	SJAPI::CConsoleLogger::WriteLog(logString.c_str(), type);
+	CConsoleLogger::WriteLog(logString.c_str(), type);
 }
 
-void SJAPI::CConsoleLogger::WriteLog(const wchar_t* logString, LogType type)
+void CConsoleLogger::WriteLog(const wchar_t* logString, LogType type)
 {
 	switch (type)
 	{
