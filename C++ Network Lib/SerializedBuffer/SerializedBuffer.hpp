@@ -26,7 +26,7 @@ namespace SJNET
 
 			inline void* GetBufferBeginAddress() const			{ return pointerSet.bufferBeginAddress; }
 			inline void* GetBufferEndAddress() const			{ return pointerSet.bufferEndAddress; }
-			inline void* GetWritePointer()						{ return pointerSet.writePointer; }
+			inline void* GetWritePointer() const				{ return pointerSet.writePointer; }
 			inline void SetWritePointer(void* p)				{ this->pointerSet.writePointer = p; }
 			inline const void* GetReadPointer() const			{ return pointerSet.readPointer; }
 			inline void SetReadPointer(void* p)					{ this->pointerSet.readPointer = p; }
@@ -60,32 +60,32 @@ namespace SJNET
 			inline CSerializedBuffer& operator<<(_In_ float data);
 			inline CSerializedBuffer& operator<<(_In_ double data);
 
-			inline void Out(_Inout_ char& dest);
-			inline void Out(_Inout_ unsigned char& dest);
-			inline void Out(_Inout_ short& dest);
-			inline void Out(_Inout_ unsigned short& dest);
-			inline void Out(_Inout_ int& dest);
-			inline void Out(_Inout_ unsigned int& dest);
-			inline void Out(_Inout_ long& dest);
-			inline void Out(_Inout_ unsigned long& dest);
-			inline void Out(_Inout_ __int64& dest);
-			inline void Out(_Inout_ unsigned __int64& dest);
-			inline void Out(_Inout_ float& dest);
-			inline void Out(_Inout_ double& dest);
-			inline void OutBytes(_Inout_ void* pBuf, size_t cbSize);
+			inline void Out(_Inout_ char& dest) const;
+			inline void Out(_Inout_ unsigned char& dest) const;
+			inline void Out(_Inout_ short& dest) const;
+			inline void Out(_Inout_ unsigned short& dest) const;
+			inline void Out(_Inout_ int& dest) const;
+			inline void Out(_Inout_ unsigned int& dest) const;
+			inline void Out(_Inout_ long& dest) const;
+			inline void Out(_Inout_ unsigned long& dest) const;
+			inline void Out(_Inout_ __int64& dest) const;
+			inline void Out(_Inout_ unsigned __int64& dest) const;
+			inline void Out(_Inout_ float& dest) const;
+			inline void Out(_Inout_ double& dest) const;
+			inline void OutBytes(_Inout_ void* pBuf, size_t cbSize) const;
 
-			inline CSerializedBuffer& operator>>(_Inout_ char& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ unsigned char& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ short& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ unsigned short& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ int& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ unsigned int& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ long& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ unsigned long& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ __int64& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ unsigned __int64& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ float& dest);
-			inline CSerializedBuffer& operator>>(_Inout_ double& dest);
+			inline const CSerializedBuffer& operator>>(_Inout_ char& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ unsigned char& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ short& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ unsigned short& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ int& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ unsigned int& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ long& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ unsigned long& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ __int64& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ unsigned __int64& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ float& dest) const;
+			inline const CSerializedBuffer& operator>>(_Inout_ double& dest) const;
 
 			inline size_t GetBufferSize() const { return pointerSet.bufferSize; }
 			inline size_t GetFreeSize()	const { return reinterpret_cast<size_t>(pointerSet.bufferEndAddress) - reinterpret_cast<size_t>(pointerSet.writePointer); }
@@ -97,8 +97,8 @@ namespace SJNET
 				size_t bufferSize;
 				char* bufferBeginAddress;
 				void* bufferEndAddress;
-				void* readPointer;
-				void* writePointer;
+				mutable void* readPointer;
+				mutable void* writePointer;
 			};
 		protected:
 			inline void ForceCrash(size_t _violationAddr) const { *reinterpret_cast<int*>(_violationAddr) = 0; }
@@ -110,7 +110,7 @@ namespace SJNET
 		{
 			pointerSet.bufferSize = SIZE;
 			pointerSet.bufferBeginAddress = buffer;
-			pointerSet.bufferEndAddress = buffer + pointerSet.bufferSize;
+			pointerSet.bufferEndAddress = buffer + SIZE;
 			pointerSet.readPointer = buffer;
 			pointerSet.writePointer = buffer;
 		}
@@ -294,79 +294,79 @@ namespace SJNET
 
 		/* ---------------------------------------------------------------------------------------- */
 
-		inline void CSerializedBuffer::Out(_Inout_ char& dest)
+		inline void CSerializedBuffer::Out(_Inout_ char& dest) const
 		{
 			dest = *reinterpret_cast<char*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<char*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ unsigned char& dest)
+		inline void CSerializedBuffer::Out(_Inout_ unsigned char& dest) const
 		{
 			dest = *reinterpret_cast<unsigned char*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned char*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ short& dest)
+		inline void CSerializedBuffer::Out(_Inout_ short& dest) const
 		{
 			dest = *reinterpret_cast<short*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<short*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ unsigned short& dest)
+		inline void CSerializedBuffer::Out(_Inout_ unsigned short& dest) const
 		{
 			dest = *reinterpret_cast<unsigned short*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned short*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ int& dest)
+		inline void CSerializedBuffer::Out(_Inout_ int& dest) const
 		{
 			dest = *reinterpret_cast<int*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<int*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ unsigned int& dest)
+		inline void CSerializedBuffer::Out(_Inout_ unsigned int& dest) const
 		{
 			dest = *reinterpret_cast<unsigned int*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned int*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ long& dest)
+		inline void CSerializedBuffer::Out(_Inout_ long& dest) const
 		{
 			dest = *reinterpret_cast<long*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<int*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ unsigned long& dest)
+		inline void CSerializedBuffer::Out(_Inout_ unsigned long& dest) const
 		{
 			dest = *reinterpret_cast<unsigned long*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned int*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ __int64& dest)
+		inline void CSerializedBuffer::Out(_Inout_ __int64& dest) const
 		{
 			dest = *reinterpret_cast<__int64*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<__int64*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ unsigned __int64& dest)
+		inline void CSerializedBuffer::Out(_Inout_ unsigned __int64& dest) const
 		{
 			dest = *reinterpret_cast<unsigned __int64*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned __int64*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ float& dest)
+		inline void CSerializedBuffer::Out(_Inout_ float& dest) const
 		{
 			dest = *reinterpret_cast<float*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<float*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::Out(_Inout_ double& dest)
+		inline void CSerializedBuffer::Out(_Inout_ double& dest) const
 		{
 			dest = *reinterpret_cast<double*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<double*>(pointerSet.readPointer) + 1;
 		}
 
-		inline void CSerializedBuffer::OutBytes(_Inout_ void* pBuf, size_t cbSize)
+		inline void CSerializedBuffer::OutBytes(_Inout_ void* pBuf, size_t cbSize) const
 		{
 			memmove(pBuf, pointerSet.readPointer, cbSize);
 			pointerSet.readPointer = reinterpret_cast<char*>(pointerSet.readPointer) + cbSize;
@@ -374,7 +374,7 @@ namespace SJNET
 
 		/* ---------------------------------------------------------------------------------------- */
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ char& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ char& dest) const
 		{
 			dest = *reinterpret_cast<char*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<char*>(pointerSet.readPointer) + 1;
@@ -382,7 +382,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned char& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned char& dest) const
 		{
 			dest = *reinterpret_cast<unsigned char*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned char*>(pointerSet.readPointer) + 1;
@@ -390,7 +390,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ short& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ short& dest) const
 		{
 			dest = *reinterpret_cast<short*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<short*>(pointerSet.readPointer) + 1;
@@ -398,7 +398,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned short& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned short& dest) const
 		{
 			dest = *reinterpret_cast<unsigned short*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned short*>(pointerSet.readPointer) + 1;
@@ -406,7 +406,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ int& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ int& dest) const
 		{
 			dest = *reinterpret_cast<int*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<int*>(pointerSet.readPointer) + 1;
@@ -414,7 +414,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned int& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned int& dest) const
 		{
 			dest = *reinterpret_cast<unsigned int*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned int*>(pointerSet.readPointer) + 1;
@@ -422,7 +422,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ long& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ long& dest) const
 		{
 			dest = *reinterpret_cast<long*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<int*>(pointerSet.readPointer) + 1;
@@ -430,7 +430,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned long& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned long& dest) const
 		{
 			dest = *reinterpret_cast<unsigned long*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned int*>(pointerSet.readPointer) + 1;
@@ -438,7 +438,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ __int64& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ __int64& dest) const
 		{
 			dest = *reinterpret_cast<__int64*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<__int64*>(pointerSet.readPointer) + 1;
@@ -446,7 +446,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned __int64& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ unsigned __int64& dest) const
 		{
 			dest = *reinterpret_cast<unsigned __int64*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<unsigned __int64*>(pointerSet.readPointer) + 1;
@@ -454,7 +454,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ float& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ float& dest) const
 		{
 			dest = *reinterpret_cast<float*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<float*>(pointerSet.readPointer) + 1;
@@ -462,7 +462,7 @@ namespace SJNET
 			return *this;
 		}
 
-		inline CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ double& dest)
+		inline const CSerializedBuffer& CSerializedBuffer::operator>>(_Inout_ double& dest) const
 		{
 			dest = *reinterpret_cast<double*>(pointerSet.readPointer);
 			pointerSet.readPointer = reinterpret_cast<double*>(pointerSet.readPointer) + 1;
