@@ -29,9 +29,9 @@ namespace SJNET
 			inline void* GetWritePointer() const				{ return pointerSet.writePointer; }
 			inline void SetWritePointer(void* p)				{ this->pointerSet.writePointer = p; }
 			inline const void* GetReadPointer() const			{ return pointerSet.readPointer; }
-			inline void SetReadPointer(void* p)					{ this->pointerSet.readPointer = p; }
+			inline void SetReadPointer(void* p)				{ this->pointerSet.readPointer = p; }
 			inline void MoveWritePointer(int offset)			{ pointerSet.writePointer = reinterpret_cast<char*>(pointerSet.writePointer) + offset; }
-			inline void MoveReadPointer(int offset)				{ pointerSet.readPointer = reinterpret_cast<char*>(pointerSet.readPointer) + offset; }
+			inline void MoveReadPointer(int offset)			{ pointerSet.readPointer = reinterpret_cast<char*>(pointerSet.readPointer) + offset; }
 
 			inline void In(_In_ char data);
 			inline void In(_In_ unsigned char data);
