@@ -70,6 +70,8 @@ bool CSJParser::LoadFile(const wchar_t* szFileName)
 
 	if (file != NULL)
 		fclose(file);
+
+	return true;
 }
 
 bool CSJParser::GetValue(const wchar_t* szKey, wchar_t* _Buf, size_t cchSize)
