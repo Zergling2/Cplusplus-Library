@@ -38,7 +38,7 @@ bool CSJParser::LoadFile(const wchar_t* szFileName)
 	{
 		if (wcslen(buf) > 2)
 		{
-			if (buf[0] == '/' && buf[1] == '/')		// аж╪╝ ╧╚╫ц
+			if (buf[0] == '/' && buf[1] == '/')		// Лё╪Л└² К╛╢Л▀°
 				continue;
 
 			szType = wcstok_s(buf, DELIM, &szContext);
