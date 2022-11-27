@@ -168,7 +168,7 @@ namespace SJNET
 		template<typename ObjectType, DestructorCallOption opt>
 		inline void CMemoryPool<ObjectType, opt>::GetObjectErrorCrash()
 		{
-			SJNET::API::CFileLogger fLogger(L"CMemoryPool_MT Error_", true);
+			SJNET::API::CFileLogger fLogger(L"CMemoryPool Error_", true);
 			wchar_t logBuffer[128];
 			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] std::bad_alloc exception occurred. Pool code is %llu", _VerificationCode);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
