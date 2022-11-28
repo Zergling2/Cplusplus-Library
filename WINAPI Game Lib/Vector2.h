@@ -7,19 +7,19 @@ public:
 	Vector2(const Vector2& v);
 	Vector2& operator=(const Vector2& v);
 	Vector2& Normalization();
-	inline x();
-	inline y();
+	inline const float GetX();
+	inline const float GetY();
 private:
 	float x;
 	float y;
 };
 
-Vector2::x()
+const float Vector2::GetX()
 {
 	return this->x;
 }
 
-Vector2::y()
+const float Vector2::GetY()
 {
 	return this->y;
 }
