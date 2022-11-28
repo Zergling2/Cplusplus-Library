@@ -24,4 +24,7 @@ const float Vector2::GetY()
 	return this->y;
 }
 
-const Vector2 operator*(const Vector2& lhs, const Vector2& rhs);1
+inline const Vector2 operator*(const Vector2& lhs, const Vector2& rhs)
+{
+	return Vector2(lhs.GetX() * rhs.GetX(), lhs.GetY() * rhs.GetY());
+}
