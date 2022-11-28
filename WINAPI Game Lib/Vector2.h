@@ -7,8 +7,21 @@ public:
 	Vector2(const Vector2& v);
 	Vector2& operator=(const Vector2& v);
 	Vector2& Normalization();
+	inline x();
+	inline y();
+private:
 	float x;
 	float y;
 };
 
-const Vector2 operator*(const Vector2& a, const Vector2& b);
+Vector2::x()
+{
+	return this->x;
+}
+
+Vector2::y()
+{
+	return this->y;
+}
+
+const Vector2 operator*(const Vector2& lhs, const Vector2& rhs);
