@@ -30,5 +30,5 @@ Vector2& Vector2::Normalization()
 
 const Vector2 operator*(const Vector2& lhs, const Vector2& rhs)
 {
-	return Vector2(lhs.GetX() * rhs.GetX(), lhs.GetY() * rhs.GetY());
+	return Vector2(lhs.GetX() * rhs.GetX(), lhs.GetY() * rhs.GetY());1
 }
