@@ -1,5 +1,6 @@
 #include "Racoon.h"
 
+#include <Windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strsafe.h>
@@ -72,15 +73,9 @@ bool Racoon::Delete(void* ptr, bool deleteArray)
 {
 	// 사용자가 올바르게 해제했을 시.
 	// 리스트에서 ptr 또는 ptr - 4(8)를 갖는 구조체를 찾은 후 제거한다.
-	int offset;
-#if defined(_WIN64)
-	offset = 8;
-#else
-	offset = 4;
-#endif
 
 	char* p1 = reinterpret_cast<char*>(ptr);	// 소멸자가 없는 클래스의 경우 이 값으로 찾아질 것이다.
-	char* p2 = p1 - offset;				// 소멸자가 있는 클래스가 new[]로 할당되었을 경우 이 값으로 찾아질 것이다.
+	char* p2 = p1 - sizeof(ULONG_PTR);				// 소멸자가 있는 클래스가 new[]로 할당되었을 경우 이 값으로 찾아질 것이다.
 	void* msp;
 	AllocInfo* cursor = this->front->next;
 	bool find = false;
@@ -149,7 +144,7 @@ void Racoon::Record(void* arg, LogType logType)
 	}
 	else
 	{
-		std::cout << "로그 파일 생성 실패!" << std::endl;
+		_tprintf(_T("로그 파일 생성 실패!\n"));
 	}
 }
 
@@ -172,7 +167,7 @@ void* operator new(size_t size, const TCHAR* fileName, int lineNumber)
 	newAllocInfo->size = static_cast<int>(size);
 	newAllocInfo->lineNumber = lineNumber;
 	newAllocInfo->isArray = false;
-	_tcscpy_s(newAllocInfo->fileName, sizeof(newAllocInfo->fileName) / sizeof(TCHAR), fileName);
+	StringCbCopy(newAllocInfo->fileName, sizeof(newAllocInfo->fileName), fileName);
 
 	Racoon::GetInstance().Add(newAllocInfo);
 
@@ -198,7 +193,7 @@ void* operator new[](size_t size, const TCHAR* fileName, int lineNumber)
 	newAllocInfo->size = static_cast<int>(size);
 	newAllocInfo->lineNumber = lineNumber;
 	newAllocInfo->isArray = true;
-	_tcscpy_s(newAllocInfo->fileName, sizeof(newAllocInfo->fileName) / sizeof(TCHAR), fileName);
+	StringCbCopy(newAllocInfo->fileName, sizeof(newAllocInfo->fileName), fileName);
 
 	Racoon::GetInstance().Add(newAllocInfo);
 
