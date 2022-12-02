@@ -20,8 +20,8 @@ class CSession;
 
 enum class DestructorCallOption
 {
-	WHEN_RETURNED_TO_POOL,
-	WHEN_MEMORY_POOL_IS_DESTROYED
+	RETURNED_TO_POOL,
+	FROM_POOL_DESTRUCTOR
 };
 
 namespace SJNET
@@ -47,6 +47,8 @@ namespace SJNET
 			~CMemoryPool();
 			template<typename ...Types> ObjectType* GetObjectFromPool(Types ...args);
 			void ReturnObjectToPool(ObjectType* _Ret);
+			inline size_t GetAllocCount() { return this->_AllocationCount; }
+			inline size_t GetFreeObjectCount() { return this->_FreeObjectCount; }
 		private:
 			void GetObjectErrorCrash();
 			void ReturnObjectErrorCrash(CMemoryPool<ObjectType, opt>* address);
@@ -54,70 +56,25 @@ namespace SJNET
 			SRWLOCK stSRWLock;
 			HANDLE hHeapHandle;
 			DWORD dwHeapOptions;
+			size_t _AllocationCount;
+			size_t _FreeObjectCount;
 		};
-
-		template<typename ObjectType, DestructorCallOption opt>
-		template<typename ...Types>
-		inline ObjectType* CMemoryPool<ObjectType, opt>::GetObjectFromPool(Types ...args)
-		{
-			AcquireSRWLockExclusive(&this->stSRWLock);
-			Node* pTmp = nullptr;		// 최대 최적화 (속도 우선) 사용 시 nullptr 대입 코드 삭제 가능.
-
-			if (!(this->_Top))
-			{
-				ReleaseSRWLockExclusive(&this->stSRWLock);
-				try
-				{
-					pTmp = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CMemoryPool<ObjectType, opt>::Node)));
-					new (pTmp) ObjectType(args...);		// placement new
-					pTmp->pSource = this;
-				}
-				catch (std::bad_alloc& e)
-				{
-					UNREFERENCED_PARAMETER(e);
-					CMemoryPool<ObjectType, opt>::GetObjectErrorCrash();
-				}
-				return reinterpret_cast<ObjectType*>(pTmp);
-			}
-			else
-			{
-				pTmp = this->_Top;
-				this->_Top = this->_Top->below;
-				ReleaseSRWLockExclusive(&this->stSRWLock);
-				new (pTmp) ObjectType(args...);		// placement new
-				return reinterpret_cast<ObjectType*>(pTmp);
-			}
-		}
-
-		template<typename ObjectType, DestructorCallOption opt>
-		inline void CMemoryPool<ObjectType, opt>::ReturnObjectToPool(ObjectType* _Ret)
-		{
-			if (reinterpret_cast<Node*>(_Ret)->pSource != this)
-				CMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(_Ret)->pSource);
-
-			if constexpr (opt == DestructorCallOption::WHEN_RETURNED_TO_POOL)
-				_Ret->~ObjectType();
-
-			AcquireSRWLockExclusive(&this->stSRWLock);
-			Node* prevTop = this->_Top;
-			this->_Top = reinterpret_cast<Node*>(_Ret);
-			this->_Top->below = prevTop;
-			ReleaseSRWLockExclusive(&this->stSRWLock);
-		}
 
 		template<typename ObjectType, DestructorCallOption opt>
 		CMemoryPool<ObjectType, opt>::CMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
 			: _Top(nullptr)
+			, hHeapHandle(HeapCreate(flOptions, dwInitialSize, dwMaximumSize))
+			, dwHeapOptions(flOptions)
+			, _AllocationCount(0)
+			, _FreeObjectCount(0)
 		{
 			InitializeSRWLock(&this->stSRWLock);
-			this->hHeapHandle = HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
-			this->dwHeapOptions = flOptions;
 		}
 
 		template<typename ObjectType, DestructorCallOption opt>
 		inline CMemoryPool<ObjectType, opt>::~CMemoryPool()
 		{
-			if constexpr (opt == DestructorCallOption::WHEN_MEMORY_POOL_IS_DESTROYED)
+			if constexpr (opt == DestructorCallOption::FROM_POOL_DESTRUCTOR)
 			{
 				AcquireSRWLockExclusive(&this->stSRWLock);
 
@@ -134,6 +91,58 @@ namespace SJNET
 			}
 
 			HeapDestroy(this->hHeapHandle);
+		}
+
+		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ...Types>
+		inline ObjectType* CMemoryPool<ObjectType, opt>::GetObjectFromPool(Types ...args)
+		{
+			AcquireSRWLockExclusive(&this->stSRWLock);
+			Node* pNode = nullptr;		// 최대 최적화 (속도 우선) 사용 시 nullptr 대입 코드 삭제 가능.
+
+			if (!(this->_Top))
+			{
+				_AllocationCount++;
+				ReleaseSRWLockExclusive(&this->stSRWLock);
+				try
+				{
+					pNode = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CMemoryPool<ObjectType, opt>::Node)));
+					new (pNode) ObjectType(args...);		// placement new
+					pNode->pSource = this;
+				}
+				catch (std::bad_alloc& e)
+				{
+					UNREFERENCED_PARAMETER(e);
+					CMemoryPool<ObjectType, opt>::GetObjectErrorCrash();
+				}
+			}
+			else
+			{
+				_FreeObjectCount--;
+				pNode = this->_Top;
+				this->_Top = this->_Top->below;
+				ReleaseSRWLockExclusive(&this->stSRWLock);
+				new (pNode) ObjectType(args...);		// placement new
+			}
+
+			return reinterpret_cast<ObjectType*>(pNode);
+		}
+
+		template<typename ObjectType, DestructorCallOption opt>
+		inline void CMemoryPool<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
+		{
+			if (reinterpret_cast<Node*>(pObj)->pSource != this)
+				CMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(pObj)->pSource);
+
+			if constexpr (opt == DestructorCallOption::RETURNED_TO_POOL)
+				pObj->~ObjectType();
+
+			AcquireSRWLockExclusive(&this->stSRWLock);
+			_FreeObjectCount++;
+			Node* prevTop = this->_Top;
+			this->_Top = reinterpret_cast<Node*>(pObj);
+			this->_Top->below = prevTop;
+			ReleaseSRWLockExclusive(&this->stSRWLock);
 		}
 
 		template<typename ObjectType, DestructorCallOption opt>
