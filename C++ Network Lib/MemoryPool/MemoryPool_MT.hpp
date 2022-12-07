@@ -16,7 +16,7 @@
 // constexpr SIZE_T dwMaximumSize = 0;
 // -------------------------------------------
 
-enum class DestructorCallOption
+enum class MPOption
 {
 	RETURNED_TO_POOL,
 	FROM_POOL_DESTRUCTOR
@@ -26,7 +26,7 @@ namespace SJNET
 {
 	namespace LIB
 	{
-		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ObjectType, MPOption opt>
 		class CMemoryPool
 		{
 		private:
@@ -45,8 +45,6 @@ namespace SJNET
 			~CMemoryPool();
 			template<typename ...Types> ObjectType* GetObjectFromPool(Types ...args);
 			void ReturnObjectToPool(ObjectType* _Ret);
-			inline size_t GetAllocCount() { return this->_AllocationCount; }
-			inline size_t GetFreeObjectCount() { return this->_FreeObjectCount; }
 		private:
 			void GetObjectErrorCrash();
 			void ReturnObjectErrorCrash(CMemoryPool<ObjectType, opt>* address);
@@ -54,25 +52,21 @@ namespace SJNET
 			SRWLOCK stSRWLock;
 			HANDLE hHeapHandle;
 			DWORD dwHeapOptions;
-			size_t _AllocationCount;
-			size_t _FreeObjectCount;
 		};
 
-		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ObjectType, MPOption opt>
 		CMemoryPool<ObjectType, opt>::CMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
 			: _Top(nullptr)
 			, hHeapHandle(HeapCreate(flOptions, dwInitialSize, dwMaximumSize))
 			, dwHeapOptions(flOptions)
-			, _AllocationCount(0)
-			, _FreeObjectCount(0)
 		{
 			InitializeSRWLock(&this->stSRWLock);
 		}
 
-		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ObjectType, MPOption opt>
 		inline CMemoryPool<ObjectType, opt>::~CMemoryPool()
 		{
-			if constexpr (opt == DestructorCallOption::FROM_POOL_DESTRUCTOR)
+			if constexpr (opt == MPOption::FROM_POOL_DESTRUCTOR)
 			{
 				AcquireSRWLockExclusive(&this->stSRWLock);
 
@@ -91,16 +85,15 @@ namespace SJNET
 			HeapDestroy(this->hHeapHandle);
 		}
 
-		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ObjectType, MPOption opt>
 		template<typename ...Types>
 		inline ObjectType* CMemoryPool<ObjectType, opt>::GetObjectFromPool(Types ...args)
 		{
 			AcquireSRWLockExclusive(&this->stSRWLock);
-			Node* pNode = nullptr;		// 최대 최적화 (속도 우선) 사용 시 nullptr 대입 코드 삭제 가능.
+			Node* pNode;
 
 			if (!(this->_Top))
 			{
-				_AllocationCount++;
 				ReleaseSRWLockExclusive(&this->stSRWLock);
 				pNode = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CMemoryPool<ObjectType, opt>::Node)));
 				if (pNode == NULL)
@@ -110,7 +103,6 @@ namespace SJNET
 			}
 			else
 			{
-				_FreeObjectCount--;
 				pNode = this->_Top;
 				this->_Top = this->_Top->below;
 				ReleaseSRWLockExclusive(&this->stSRWLock);
@@ -120,44 +112,43 @@ namespace SJNET
 			return reinterpret_cast<ObjectType*>(pNode);
 		}
 
-		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ObjectType, MPOption opt>
 		inline void CMemoryPool<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
 		{
 			if (reinterpret_cast<Node*>(pObj)->pSource != this)
 				CMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(pObj)->pSource);
 
-			if constexpr (opt == DestructorCallOption::RETURNED_TO_POOL)
+			if constexpr (opt == MPOption::RETURNED_TO_POOL)
 				pObj->~ObjectType();
 
 			AcquireSRWLockExclusive(&this->stSRWLock);
-			_FreeObjectCount++;
 			Node* prevTop = this->_Top;
 			this->_Top = reinterpret_cast<Node*>(pObj);
 			this->_Top->below = prevTop;
 			ReleaseSRWLockExclusive(&this->stSRWLock);
 		}
 
-		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ObjectType, MPOption opt>
 		inline void CMemoryPool<ObjectType, opt>::GetObjectErrorCrash()
 		{
 			SJNET::API::CFileLogger fLogger(L"CMemoryPool_MT Error_", true);
-			wchar_t logBuffer[128];
-			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] std::bad_alloc exception occurred. Pool address is %p", this);
+			wchar_t logBuffer[256];
+			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] std::bad_alloc exception occurred. Pool address is 0x%p", this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
 			ForceCrash(0xABABABAB);
 		}
 
-		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ObjectType, MPOption opt>
 		inline void CMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(CMemoryPool<ObjectType, opt>* address)
 		{
 			SJNET::API::CFileLogger fLogger(L"CMemoryPool_MT Error_", true);
-			wchar_t logBuffer[128];
-			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] An object created from another pool(%p) has been returned to the pool located at address %p.", address, this);
+			wchar_t logBuffer[256];
+			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] An object created from another pool(0x%p) has been returned to the pool located at address 0x%p.", address, this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
 			ForceCrash(0xABABABAB);
 		}
 
-		template<typename ObjectType, DestructorCallOption opt>
+		template<typename ObjectType, MPOption opt>
 		template<typename ...Types>
 		inline CMemoryPool<ObjectType, opt>::Node::Node(Types ...args)
 			: object(args...)
