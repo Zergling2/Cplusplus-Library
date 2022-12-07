@@ -16,8 +16,6 @@ constexpr SIZE_T dwInitialSize = 4096 * 16;
 constexpr SIZE_T dwMaximumSize = 0;
 // -------------------------------------------
 
-class CSession;
-
 enum class DestructorCallOption
 {
 	WHEN_RETURNED_TO_POOL,

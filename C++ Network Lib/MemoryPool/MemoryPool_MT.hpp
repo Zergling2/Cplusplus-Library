@@ -16,8 +16,6 @@
 // constexpr SIZE_T dwMaximumSize = 0;
 // -------------------------------------------
 
-class CSession;
-
 enum class DestructorCallOption
 {
 	RETURNED_TO_POOL,
@@ -104,17 +102,11 @@ namespace SJNET
 			{
 				_AllocationCount++;
 				ReleaseSRWLockExclusive(&this->stSRWLock);
-				try
-				{
-					pNode = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CMemoryPool<ObjectType, opt>::Node)));
-					new (pNode) ObjectType(args...);		// placement new
-					pNode->pSource = this;
-				}
-				catch (std::bad_alloc& e)
-				{
-					UNREFERENCED_PARAMETER(e);
+				pNode = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CMemoryPool<ObjectType, opt>::Node)));
+				if (pNode == NULL)
 					CMemoryPool<ObjectType, opt>::GetObjectErrorCrash();
-				}
+				new (pNode) ObjectType(args...);		// placement new
+				pNode->pSource = this;
 			}
 			else
 			{
