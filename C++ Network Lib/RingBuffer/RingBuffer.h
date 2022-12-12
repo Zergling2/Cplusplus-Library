@@ -11,7 +11,6 @@ typedef int RB_RESULT;
 #endif
 
 #define INSUFFICIENT_FREE_SPACE ((RB_RESULT)(-1))
-#define INSUFFICIENT_DATA_IN_BUFFER ((RB_RESULT)(-2))
 
 namespace SJNET
 {

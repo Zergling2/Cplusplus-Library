@@ -11,7 +11,7 @@ CRingBuffer::CRingBuffer(size_t size)
 
 	if (!bufferBeginAddress)
 	{
-		SJAPI::CFileLogger fLogger(L"CRingBuffer_Error_", true);
+		SJNET::API::CFileLogger fLogger(L"CRingBuffer_Error_", true);
 		fLogger.WriteLog(L"std::bad_alloc exception!", LogType::LT_CRITICAL);
 
 		ForceCrash(0x78563412);
@@ -80,7 +80,7 @@ RB_RESULT CRingBuffer::Dequeue(void* _Dst, size_t size)
 	}
 
 	if (usingSize < size)
-		return INSUFFICIENT_DATA_IN_BUFFER;
+		size = usingSize;
 
 	if (dds >= size)
 	{
@@ -113,7 +113,7 @@ RB_RESULT CRingBuffer::Peek(void* _Dst, size_t size)
 	}
 
 	if (usingSize < size)
-		return INSUFFICIENT_DATA_IN_BUFFER;
+		size = usingSize;
 
 	if (dds >= size)
 	{
