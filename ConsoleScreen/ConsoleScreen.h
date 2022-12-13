@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Windows.h>
+typedef void* HANDLE;
 
 class ConsoleScreen
 {
 public:
-	ConsoleScreen(unsigned int dfScreenWidth, unsigned int dfScreenHeight);
+	ConsoleScreen(int _ScreenWidth, int _ScreenHeight);
 	~ConsoleScreen();
 	void ClearScreen();
 	void BufferClear();
@@ -13,9 +13,10 @@ public:
 	void DrawSprite(char chSprite, int xPos, int yPos);
 	void MoveCursor(short xPos, short yPos);
 private:
-	void ConsoleInitialize(void);
+	void Initialize(void);
 	char* screen;
-	int dfScreenWidth;
-	int dfScreenHeight;
+	int iScreenWidth;
+	int iScreenHeight;
+	int iScreenByteSize;
 	HANDLE hConsole;
 };

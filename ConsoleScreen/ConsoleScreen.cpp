@@ -1,21 +1,68 @@
 #include "ConsoleScreen.h"
+#include <Windows.h>
 #include <stdio.h>
 
-void ConsoleScreen::ConsoleInitialize(void)
+ConsoleScreen::ConsoleScreen(int _ScreenWidth, int _ScreenHeight)
+	: iScreenWidth(_ScreenWidth)
+	, iScreenHeight(_ScreenHeight)
 {
-	CONSOLE_CURSOR_INFO stConsoleCursor;
+	if (iScreenWidth < 0 || iScreenHeight < 0)
+	{
+		printf("The screen width or height must be positive integer!\n");
+		exit(999);
+	}
 
-	//-------------------------------------------------------------
-	// 화면의 커서를 안보이게끔 설정한다.
-	//-------------------------------------------------------------
-	stConsoleCursor.bVisible = FALSE;
-	stConsoleCursor.dwSize = 1;
+	screen = new BYTE[iScreenWidth * iScreenHeight];
+	Initialize();
+}
 
-	//-------------------------------------------------------------
-	// 콘솔화면 (스텐다드 아웃풋) 핸들을 구한다.
-	//-------------------------------------------------------------
-	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleCursorInfo(hConsole, &stConsoleCursor);
+ConsoleScreen::~ConsoleScreen()
+{
+	delete[] screen;
+}
+
+//-------------------------------------------------------------
+// 콘솔 화면을 초기화 한다.
+//
+//-------------------------------------------------------------
+void ConsoleScreen::ClearScreen(void)
+{
+	COORD c = { 0, 0 };
+	DWORD dw;
+
+	FillConsoleOutputCharacter(hConsole, ' ', iScreenByteSize, c, &dw);
+}
+
+void ConsoleScreen::BufferClear()
+{
+	memset(screen, ' ', iScreenByteSize);
+}
+
+void ConsoleScreen::PrintScreen()
+{
+	char* p = this->screen + iScreenWidth - 1;
+	for (int i = 0; i < iScreenHeight; i++)
+	{
+		*p = '\0';
+		p += iScreenWidth;
+	}
+
+	p = screen;
+	for (int i = 0; i < iScreenHeight; i++)
+	{
+		MoveCursor(0, i);
+		printf(p);
+		p += iScreenWidth;
+	}
+}
+
+void ConsoleScreen::DrawSprite(char chSprite, int xPos, int yPos)
+{
+	if (xPos < 0 || yPos < 0 || xPos >= iScreenWidth - 1 || yPos >= iScreenHeight)
+		return;
+
+	char* pSpritePos = screen + (yPos * iScreenWidth) + xPos;
+	*pSpritePos = chSprite;
 }
 
 //-------------------------------------------------------------
@@ -31,58 +78,20 @@ void ConsoleScreen::MoveCursor(short xPos, short yPos)
 	SetConsoleCursorPosition(hConsole, stCoord);
 }
 
-//-------------------------------------------------------------
-// 콘솔 화면을 초기화 한다.
-//
-//-------------------------------------------------------------
-void ConsoleScreen::ClearScreen(void)
+void ConsoleScreen::Initialize(void)
 {
-	COORD c = { 0, 0 };
-	DWORD dw;
+	CONSOLE_CURSOR_INFO stConsoleCursor;
 
-	FillConsoleOutputCharacter(GetStdHandle(STD_OUTPUT_HANDLE), ' ', 100 * 100, c, &dw);
-}
+	//-------------------------------------------------------------
+	// 화면의 커서를 안보이게끔 설정한다.
+	//-------------------------------------------------------------
+	stConsoleCursor.bVisible = FALSE;
+	stConsoleCursor.dwSize = 1;
 
-ConsoleScreen::ConsoleScreen(unsigned int dfScreenWidth, unsigned int dfScreenHeight) :
-	dfScreenWidth(dfScreenWidth), dfScreenHeight(dfScreenHeight)
-{
-	screen = new char[dfScreenWidth * dfScreenHeight];
-	ConsoleInitialize();
-}
-
-ConsoleScreen::~ConsoleScreen()
-{
-	delete[] screen;
-}
-
-void ConsoleScreen::BufferClear()
-{
-	memset(screen, ' ', dfScreenWidth * dfScreenHeight);
-}
-
-void ConsoleScreen::PrintScreen()
-{
-	char* p = this->screen + dfScreenWidth - 1;
-	for (int i = 0; i < dfScreenHeight; i++)
-	{
-		*p = '\0';
-		p += dfScreenWidth;
-	}
-
-	p = screen;
-	for (int i = 0; i < dfScreenHeight; i++)
-	{
-		MoveCursor(0, i);
-		printf(p);
-		p += dfScreenWidth;
-	}
-}
-
-void ConsoleScreen::DrawSprite(char chSprite, int xPos, int yPos)
-{
-	if (xPos < 0 || yPos < 0 || xPos >= dfScreenWidth - 1 || yPos >= dfScreenHeight)
-		return;
-
-	char* p = screen + (yPos * dfScreenWidth) + xPos;
-	*p = chSprite;
+	//-------------------------------------------------------------
+	// 콘솔화면 (스탠다드 아웃풋) 핸들을 구한다.
+	//-------------------------------------------------------------
+	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleCursorInfo(hConsole, &stConsoleCursor);
+	iScreenByteSize = iScreenWidth * iScreenHeight;
 }
