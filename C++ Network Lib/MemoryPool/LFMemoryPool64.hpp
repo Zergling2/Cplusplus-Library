@@ -105,7 +105,6 @@ namespace SJNET
 				Node* _pBelow;
 			};
 		public:
-			long AllocCount;
 			CLFMemoryPool64(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);	// (경고!) dwMaximumSize가 0이 아닌 경우 LFH 적용 불가 및 해당 힙에서의 객체 최대 할당 크기는 0x7FFF8로 제한됨.
 			~CLFMemoryPool64();
 			template<typename ...Types> ObjectType* GetObjectFromPool(Types ...args);
@@ -124,7 +123,6 @@ namespace SJNET
 			, hHeapHandle(HeapCreate(flOptions, dwInitialSize, dwMaximumSize))
 			, dwHeapOptions(flOptions)
 		{
-			AllocCount = 0;
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
@@ -144,7 +142,6 @@ namespace SJNET
 				pNode = this->_pTop;
 				if (GetLFStampRemovedAddress(pNode) == nullptr)
 				{
-					InterlockedIncrement(&this->AllocCount);
 					pNode = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CLFMemoryPool64<ObjectType, opt>::Node)));
 					if (pNode == NULL) CLFMemoryPool64<ObjectType, opt>::GetObjectErrorCrash();
 					new (pNode) ObjectType(args...);		// placement new
