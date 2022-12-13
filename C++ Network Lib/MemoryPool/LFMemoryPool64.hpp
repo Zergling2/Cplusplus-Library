@@ -76,9 +76,9 @@ namespace SJNET
 {
 	namespace LIB
 	{
-		constexpr ULONG64 LF_MASK =		0xFFFF800000000000U;
-		constexpr ULONG64 LF_MASK_NOT = 0x00007FFFFFFFFFFFU;
-		constexpr ULONG64 LF_MASK_INC = 0x0000800000000000U;
+		constexpr ULONG64 LF_MASK		= 0xFFFF800000000000U;
+		constexpr ULONG64 LF_MASK_NOT	= 0x00007FFFFFFFFFFFU;
+		constexpr ULONG64 LF_MASK_INC	= 0x0000800000000000U;
 
 		inline void* GetLFStampRemovedAddress(void* _Address)
 		{
@@ -97,7 +97,7 @@ namespace SJNET
 			struct Node
 			{
 			public:
-				template<typename... Types> Node(Types ...args);
+				// template<typename... Types> Node(Types ...args);	// deprecated
 				// void* operator new(size_t size);			// deprecated
 				// void operator delete(void* _Block);		// deprecated
 				ObjectType object;
@@ -105,6 +105,7 @@ namespace SJNET
 				Node* _pBelow;
 			};
 		public:
+			long AllocCount;
 			CLFMemoryPool64(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);	// (경고!) dwMaximumSize가 0이 아닌 경우 LFH 적용 불가 및 해당 힙에서의 객체 최대 할당 크기는 0x7FFF8로 제한됨.
 			~CLFMemoryPool64();
 			template<typename ...Types> ObjectType* GetObjectFromPool(Types ...args);
@@ -123,6 +124,7 @@ namespace SJNET
 			, hHeapHandle(HeapCreate(flOptions, dwInitialSize, dwMaximumSize))
 			, dwHeapOptions(flOptions)
 		{
+			AllocCount = 0;
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
@@ -142,13 +144,14 @@ namespace SJNET
 				pNode = this->_pTop;
 				if (GetLFStampRemovedAddress(pNode) == nullptr)
 				{
+					InterlockedIncrement(&this->AllocCount);
 					pNode = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CLFMemoryPool64<ObjectType, opt>::Node)));
 					if (pNode == NULL) CLFMemoryPool64<ObjectType, opt>::GetObjectErrorCrash();
 					new (pNode) ObjectType(args...);		// placement new
 					pNode->_pSource = this;
 					return reinterpret_cast<ObjectType*>(pNode);
 				}
-				pNewTop = reinterpret_cast<Node*>(reinterpret_cast<LONG64>(reinterpret_cast<Node*>(GetLFStampRemovedAddress(pNode))->_pBelow) | (GetLFStamp(pNode) + LF_MASK_INC));
+				pNewTop = reinterpret_cast<Node*>(reinterpret_cast<LONG64>(reinterpret_cast<Node*>(GetLFStampRemovedAddress(pNode))->_pBelow) | GetLFStamp(pNode));	// 굳이 GetLFStamp 반환값에 LF_MASK_INC를 더할 필요는 없다고 생각됨.
 			} while (reinterpret_cast<LONG64>(pNode) != _InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(&_pTop), reinterpret_cast<LONG64>(pNewTop), reinterpret_cast<LONG64>(pNode)));
 			
 			pNode = reinterpret_cast<Node*>(GetLFStampRemovedAddress(pNode));
@@ -193,13 +196,6 @@ namespace SJNET
 			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[LFMPOOL ERROR] An object created from another pool(0x%p) has been returned to the pool located at address 0x%p.", address, this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
 			ForceCrash(0xAFAFAFAF);
-		}
-
-		template<typename ObjectType, LFMPDestructorCallOption opt>
-		template<typename ...Types>
-		inline CLFMemoryPool64<ObjectType, opt>::Node::Node(Types ...args)
-			: object(args...)
-		{
 		}
 	}
 }
