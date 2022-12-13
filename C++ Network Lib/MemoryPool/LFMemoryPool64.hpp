@@ -126,14 +126,14 @@ namespace SJNET
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
-		inline CLFMemoryPool64<ObjectType, opt>::~CLFMemoryPool64()
+		CLFMemoryPool64<ObjectType, opt>::~CLFMemoryPool64()
 		{
 			HeapDestroy(this->hHeapHandle);
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
 		template<typename ...Types>
-		inline ObjectType* CLFMemoryPool64<ObjectType, opt>::GetObjectFromPool(Types ...args)
+		ObjectType* CLFMemoryPool64<ObjectType, opt>::GetObjectFromPool(Types ...args)
 		{
 			Node* pNode;
 			Node* pNewTop;
@@ -148,7 +148,7 @@ namespace SJNET
 					pNode->_pSource = this;
 					return reinterpret_cast<ObjectType*>(pNode);
 				}
-				pNewTop = reinterpret_cast<Node*>(reinterpret_cast<LONG64>(reinterpret_cast<Node*>(GetLFStampRemovedAddress(pNode))->_pBelow) | GetLFStamp(pNode));	// 굳이 GetLFStamp 반환값에 LF_MASK_INC를 더할 필요는 없다고 생각됨.
+				pNewTop = reinterpret_cast<Node*>(reinterpret_cast<LONG64>(reinterpret_cast<Node*>(GetLFStampRemovedAddress(pNode))->_pBelow) | GetLFStamp(pNode));	// 굳이 Pop에서도 스탬프 값 증가시킬 필요는 없음.
 			} while (reinterpret_cast<LONG64>(pNode) != _InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(&_pTop), reinterpret_cast<LONG64>(pNewTop), reinterpret_cast<LONG64>(pNode)));
 			
 			pNode = reinterpret_cast<Node*>(GetLFStampRemovedAddress(pNode));
@@ -157,7 +157,7 @@ namespace SJNET
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
-		inline void CLFMemoryPool64<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
+		void CLFMemoryPool64<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
 		{
 			if (reinterpret_cast<Node*>(pObj)->_pSource != this)
 				CLFMemoryPool64<ObjectType, opt>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(pObj)->_pSource);
@@ -176,7 +176,7 @@ namespace SJNET
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
-		inline void CLFMemoryPool64<ObjectType, opt>::GetObjectErrorCrash()
+		void CLFMemoryPool64<ObjectType, opt>::GetObjectErrorCrash()
 		{
 			SJNET::API::CFileLogger fLogger(L"CMemoryPool_LF Error_", true);
 			wchar_t logBuffer[256];
@@ -186,7 +186,7 @@ namespace SJNET
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
-		inline void CLFMemoryPool64<ObjectType, opt>::ReturnObjectErrorCrash(CLFMemoryPool64<ObjectType, opt>* address)
+		void CLFMemoryPool64<ObjectType, opt>::ReturnObjectErrorCrash(CLFMemoryPool64<ObjectType, opt>* address)
 		{
 			SJNET::API::CFileLogger fLogger(L"CMemoryPool_LF Error_", true);
 			wchar_t logBuffer[256];
