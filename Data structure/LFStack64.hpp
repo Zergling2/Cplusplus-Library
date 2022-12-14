@@ -23,7 +23,7 @@ namespace SJNET
 			};
 		public:
 			CLFStack64(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);
-			void Push(T data);
+			void Push(const T& data);
 			bool Pop(T& buf);
 			bool Empty() { return !GetLFStampRemovedAddress(_pTop); }
 		private:
@@ -45,7 +45,7 @@ namespace SJNET
 		}
 
 		template<typename T>
-		void CLFStack64<T>::Push(T data)
+		void CLFStack64<T>::Push(const T& data)
 		{
 			CLFStack64Node* pNewNode = _NodePool.GetObjectFromPool(data);
 			CLFStack64Node* pTemp;
