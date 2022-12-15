@@ -40,12 +40,12 @@ HEAP_NO_SERIALIZE					직렬화된 액세스는 힙 함수가 이 힙에 액세스할 때 사용되지 �
 
 [in] dwMaximumSize
 
-힙의 최대 크기(바이트)입니다. HeapCreate 함수는 dwMaximumSize를 시스템 페이지 크기의 배수로 반올림한 다음 힙에 
-대한 프로세스의 가상 주소 공간에서 해당 크기의 블록을 예약합니다. HeapAlloc 또는 HeapReAlloc 함수의 할당 요청이 
+힙의 최대 크기(바이트)입니다. HeapCreate 함수는 dwMaximumSize를 시스템 페이지 크기의 배수로 반올림한 다음 힙에
+대한 프로세스의 가상 주소 공간에서 해당 크기의 블록을 예약합니다. HeapAlloc 또는 HeapReAlloc 함수의 할당 요청이
 dwInitialSize에 지정된 크기를 초과하면 시스템은 힙의 최대 크기까지 힙에 대한 추가 메모리 페이지를 커밋합니다.
 
-dwMaximumSize가 0이 아니면 힙 크기가 고정되어 최대 크기를 초과할 수 없습니다. 또한 힙에서 할당할 수 있는 가장 큰 
-메모리 블록은 32비트 프로세스의 경우 512KB 미만이고 64비트 프로세스의 경우 1,024KB보다 약간 작습니다. 힙의 최대 
+dwMaximumSize가 0이 아니면 힙 크기가 고정되어 최대 크기를 초과할 수 없습니다. 또한 힙에서 할당할 수 있는 가장 큰
+메모리 블록은 32비트 프로세스의 경우 512KB 미만이고 64비트 프로세스의 경우 1,024KB보다 약간 작습니다. 힙의 최대
 크기가 블록을 포함할 만큼 큰 경우에도 더 큰 블록을 할당하는 요청이 실패합니다.
 
 dwMaximumSize가 0이면 힙의 크기가 커질 수 있습니다. 힙의 크기는 사용 가능한 메모리에 의해서만 제한됩니다. 고정 크
@@ -76,9 +76,9 @@ namespace SJNET
 {
 	namespace LIB
 	{
-		constexpr ULONG64 LF_MASK		= 0xFFFF800000000000U;
-		constexpr ULONG64 LF_MASK_NOT	= 0x00007FFFFFFFFFFFU;
-		constexpr ULONG64 LF_MASK_INC	= 0x0000800000000000U;
+		constexpr ULONG64 LF_MASK = 0xFFFF800000000000U;
+		constexpr ULONG64 LF_MASK_NOT = 0x00007FFFFFFFFFFFU;
+		constexpr ULONG64 LF_MASK_INC = 0x0000800000000000U;
 
 		inline void* GetLFStampRemovedAddress(void* _Address)
 		{
@@ -149,8 +149,8 @@ namespace SJNET
 					return reinterpret_cast<ObjectType*>(pNode);
 				}
 				pNewTop = reinterpret_cast<Node*>(reinterpret_cast<LONG64>(reinterpret_cast<Node*>(GetLFStampRemovedAddress(pNode))->_pBelow) | GetLFStamp(pNode));	// 굳이 Pop에서도 스탬프 값 증가시킬 필요는 없음.
-			} while (reinterpret_cast<LONG64>(pNode) != _InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(&_pTop), reinterpret_cast<LONG64>(pNewTop), reinterpret_cast<LONG64>(pNode)));
-			
+			} while (pNode != InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&_pTop), pNewTop, pNode));
+
 			pNode = reinterpret_cast<Node*>(GetLFStampRemovedAddress(pNode));
 			new (pNode) ObjectType(args...);		// placement new
 			return reinterpret_cast<ObjectType*>(pNode);
@@ -172,7 +172,7 @@ namespace SJNET
 				pTemp = this->_pTop;
 				reinterpret_cast<Node*>(pObj)->_pBelow = reinterpret_cast<Node*>(GetLFStampRemovedAddress(pTemp));
 				pNewTop = reinterpret_cast<Node*>(reinterpret_cast<ULONG64>(pObj) | (GetLFStamp(pTemp) + LF_MASK_INC));
-			} while (reinterpret_cast<long long>(pTemp) != _InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(&_pTop), reinterpret_cast<LONG64>(pNewTop), reinterpret_cast<LONG64>(pTemp)));
+			} while (pTemp != InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&_pTop), pNewTop, pTemp));
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
