@@ -14,7 +14,7 @@ namespace SJNET
 		private:
 			class CLFStack64Node
 			{
-				friend class CLFStack64;
+				friend CLFStack64;
 			public:
 				inline CLFStack64Node(T data);
 			private:
@@ -23,7 +23,7 @@ namespace SJNET
 			};
 		public:
 			CLFStack64(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);
-			void Push(const T& data);
+			void Push(const T data);
 			bool Pop(T& buf);
 			bool Empty() { return !GetLFStampRemovedAddress(_pTop); }
 		private:
@@ -45,7 +45,7 @@ namespace SJNET
 		}
 
 		template<typename T>
-		void CLFStack64<T>::Push(const T& data)
+		void CLFStack64<T>::Push(const T data)
 		{
 			CLFStack64Node* pNewNode = _NodePool.GetObjectFromPool(data);
 			CLFStack64Node* pTemp;
@@ -55,7 +55,7 @@ namespace SJNET
 				pTemp = this->_pTop;		// load
 				pNewNode->_pBelow = reinterpret_cast<CLFStack64Node*>(GetLFStampRemovedAddress(pTemp));	// load
 				pNewTop = reinterpret_cast<CLFStack64Node*>(reinterpret_cast<ULONG64>(pNewNode) | (GetLFStamp(pTemp) + LF_MASK_INC));
-			} while (reinterpret_cast<long long>(pTemp) != _InterlockedCompareExchange64(reinterpret_cast<volatile long long*>(&_pTop), reinterpret_cast<long long>(pNewTop), reinterpret_cast<long long>(pTemp)));
+			} while (pTemp != InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&_pTop), pNewTop, pTemp));
 		}
 
 		template<typename T>
@@ -69,7 +69,7 @@ namespace SJNET
 				if (GetLFStampRemovedAddress(pNode) == nullptr)
 					return false;
 				pNewTop = reinterpret_cast<CLFStack64Node*>(reinterpret_cast<LONG64>(reinterpret_cast<CLFStack64Node*>(GetLFStampRemovedAddress(pNode))->_pBelow) | GetLFStamp(pNode));	// 굳이 Pop에서도 GetLFStamp 반환값에 LF_MASK_INC를 더할 필요는 없다고 생각됨.
-			} while (reinterpret_cast<LONG64>(pNode) != _InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(&_pTop), reinterpret_cast<LONG64>(pNewTop), reinterpret_cast<LONG64>(pNode)));
+			} while (pNode != InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&_pTop), pNewTop, pNode));
 
 			pNode = reinterpret_cast<CLFStack64Node*>(GetLFStampRemovedAddress(pNode));
 			buf = pNode->data;
