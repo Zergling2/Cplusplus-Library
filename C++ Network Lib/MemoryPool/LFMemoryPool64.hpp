@@ -112,7 +112,7 @@ namespace SJNET
 		private:
 			void GetObjectErrorCrash();
 			void ReturnObjectErrorCrash(CLFMemoryPool64<ObjectType, opt>* address);
-			alignas(8) Node* volatile _pTop;		//[hard-coded] Because this library only supports 64-bit.
+			alignas(8) Node* _pTop;		//[hard-coded] Because this library only supports 64-bit.
 			HANDLE hHeapHandle;
 			DWORD dwHeapOptions;
 		};
@@ -135,8 +135,8 @@ namespace SJNET
 		template<typename ...Types>
 		ObjectType* CLFMemoryPool64<ObjectType, opt>::GetObjectFromPool(Types ...args)
 		{
-			Node* pNode;
-			Node* pNewTop;
+			Node* volatile pNode;
+			Node* volatile pNewTop;
 			do
 			{
 				pNode = this->_pTop;
@@ -165,8 +165,8 @@ namespace SJNET
 			if constexpr (opt == LFMPDestructorCallOption::AUTO)
 				pObj->~ObjectType();
 
-			Node* pTemp;
-			Node* pNewTop;
+			Node* volatile pTemp;
+			Node* volatile pNewTop;
 			do
 			{
 				pTemp = this->_pTop;

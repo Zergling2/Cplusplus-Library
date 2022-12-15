@@ -27,7 +27,7 @@ namespace SJNET
 			bool Pop(T& buf);
 			bool Empty() { return !GetLFStampRemovedAddress(_pTop); }
 		private:
-			alignas(8) CLFStack64Node* volatile _pTop;		// 64비트 경계에 정렬
+			alignas(8) CLFStack64Node* _pTop;		// 64비트 경계에 정렬
 			alignas(64) CLFMemoryPool64<CLFStack64<T>::CLFStack64Node, LFMPDestructorCallOption::AUTO> _NodePool;
 		};
 
@@ -48,8 +48,9 @@ namespace SJNET
 		void CLFStack64<T>::Push(const T data)
 		{
 			CLFStack64Node* pNewNode = _NodePool.GetObjectFromPool(data);
-			CLFStack64Node* pTemp;
-			CLFStack64Node* pNewTop;
+
+			CLFStack64Node* volatile pTemp;
+			CLFStack64Node* volatile pNewTop;
 			do
 			{
 				pTemp = this->_pTop;		// load
@@ -61,8 +62,8 @@ namespace SJNET
 		template<typename T>
 		bool CLFStack64<T>::Pop(T& buf)
 		{
-			CLFStack64Node* pNode;
-			CLFStack64Node* pNewTop;
+			CLFStack64Node* volatile pNode;
+			CLFStack64Node* volatile pNewTop;
 			do
 			{
 				pNode = this->_pTop;
