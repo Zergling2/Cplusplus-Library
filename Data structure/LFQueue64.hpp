@@ -78,13 +78,15 @@ namespace SJNET
 		{
 			CLFQueue64Node* volatile pTempHead;
 			CLFQueue64Node* volatile pTempHeadNext;
+			PVOID pNewHead;
 			do
 			{
 				pTempHead = this->_pHead;
 				pTempHeadNext = reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempHead))->_pNext;
 				if (pTempHeadNext == nullptr)
 					return false;
-			} while (pTempHead != InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&this->_pHead), pTempHeadNext, pTempHead));
+				pNewHead = reinterpret_cast<PVOID>(reinterpret_cast<LONG64>(pTempHeadNext) | (GetLFStamp(pTempHead) + LF_MASK_INC));
+			} while (pTempHead != InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&this->_pHead), pNewHead, pTempHead));
 
 			buf = pTempHeadNext->data;
 			_NodePool.ReturnObjectToPool(reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempHead)));		// 더미 노드로 쓰인 노드는 이제 해제
