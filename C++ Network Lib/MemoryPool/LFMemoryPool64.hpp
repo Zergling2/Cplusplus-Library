@@ -123,6 +123,16 @@ namespace SJNET
 			, hHeapHandle(HeapCreate(flOptions, dwInitialSize, dwMaximumSize))
 			, dwHeapOptions(flOptions)
 		{
+			SYSTEM_INFO si;
+			GetSystemInfo(&si);
+			if ((reinterpret_cast<size_t>(si.lpMaximumApplicationAddress) & 0xFFFF800000000000) != 0)
+			{
+				SJNET::API::CFileLogger fLogger(L"CLFMemoryPool64 Error_", true);
+				wchar_t logBuffer[256];
+				StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[LFMP64 ERROR] Invalid lock free masking bit setting.");
+				fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
+				ForceCrash(0xDEADBEEF);
+			}
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
@@ -178,21 +188,21 @@ namespace SJNET
 		template<typename ObjectType, LFMPDestructorCallOption opt>
 		void CLFMemoryPool64<ObjectType, opt>::GetObjectErrorCrash()
 		{
-			SJNET::API::CFileLogger fLogger(L"CMemoryPool_LF Error_", true);
+			SJNET::API::CFileLogger fLogger(L"CLFMemoryPool64 Error_", true);
 			wchar_t logBuffer[256];
-			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[LFMPOOL ERROR] std::bad_alloc exception occurred. Pool address is 0x%p", this);
+			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[LFMP64 ERROR] std::bad_alloc exception occurred. Pool address is 0x%p", this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
-			ForceCrash(0xAFAFAFAF);
+			ForceCrash(0xDEADBEEF);
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
 		void CLFMemoryPool64<ObjectType, opt>::ReturnObjectErrorCrash(CLFMemoryPool64<ObjectType, opt>* address)
 		{
-			SJNET::API::CFileLogger fLogger(L"CMemoryPool_LF Error_", true);
+			SJNET::API::CFileLogger fLogger(L"CLFMemoryPool64 Error_", true);
 			wchar_t logBuffer[256];
-			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[LFMPOOL ERROR] An object created from another pool(0x%p) has been returned to the pool located at address 0x%p.", address, this);
+			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[LFMP64 ERROR] An object created from another pool(0x%p) has been returned to the pool located at address 0x%p.", address, this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
-			ForceCrash(0xAFAFAFAF);
+			ForceCrash(0xDEADBEEF);
 		}
 	}
 }
