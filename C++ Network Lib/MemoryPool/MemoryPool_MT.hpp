@@ -135,7 +135,7 @@ namespace SJNET
 			wchar_t logBuffer[256];
 			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] std::bad_alloc exception occurred. Pool address is 0x%p", this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
-			ForceCrash(0xABABABAB);
+			ForceCrash(0xDEADBEEF);
 		}
 
 		template<typename ObjectType, MPOption opt>
@@ -145,7 +145,7 @@ namespace SJNET
 			wchar_t logBuffer[256];
 			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] An object created from another pool(0x%p) has been returned to the pool located at address 0x%p.", address, this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
-			ForceCrash(0xABABABAB);
+			ForceCrash(0xDEADBEEF);
 		}
 
 		template<typename ObjectType, MPOption opt>
