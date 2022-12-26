@@ -6,7 +6,7 @@
 #include <locale.h>
 #include <stdio.h>
 
-const wchar_t* Profiler::szItems = L"Name,Average,Min,Max,Call\n";
+const wchar_t* Profiler::szItems = L"Thread ID,Name,Average,Min,Max,Call\n";
 
 Profiler::Profiler()
 {
@@ -112,21 +112,21 @@ void Profiler::SaveProfileToFile(const wchar_t* szFileName)
 
 #ifdef _DEBUG
     #ifdef _WIN64
-    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,x64 Debug mode,\n",
+    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,,x64 Debug mode,\n",
         base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
         base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
     #else
-    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,x86 Debug mode,\n",
+    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,,x86 Debug mode,\n",
         base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
         base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
     #endif
 #else
     #ifdef _WIN64
-    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,x64 Release mode,\n",
+    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,,x64 Release mode,\n",
         base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
         base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
     #else
-    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,x86 Release mode,\n",
+    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,,x86 Release mode,\n",
         base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
         base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
     #endif
@@ -141,14 +141,14 @@ void Profiler::SaveProfileToFile(const wchar_t* szFileName)
     {
         ProfileSample* pSample = i->second;
 
-        StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%s,%fレs,%fレs,%fレs,%d\n",
-            pSample->tag.c_str(),
-            pSample->numOfCalls <= 2 ? (pSample->totalTime) / (double)(_Frequency / 1000000) / pSample->numOfCalls
-            :
-            (pSample->totalTime - (pSample->maximumTime + pSample->minimumTime)) / (double)(_Frequency / 1000000) / (pSample->numOfCalls - 2),
-            (pSample->minimumTime) / (double)(_Frequency / 1000000),
-            (pSample->maximumTime) / (double)(_Frequency / 1000000),
-            pSample->numOfCalls);
+        StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%d,%s,%fレs,%fレs,%fレs,%d\n"
+            , 0xDEADBEEF
+            , pSample->tag.c_str()
+            , pSample->numOfCalls <= 2 ? (pSample->totalTime) / (double)(_Frequency / 1000000) / pSample->numOfCalls :
+            (pSample->totalTime - (pSample->maximumTime + pSample->minimumTime)) / (double)(_Frequency / 1000000) / (pSample->numOfCalls - 2)
+            , (pSample->minimumTime) / (double)(_Frequency / 1000000)
+            , (pSample->maximumTime) / (double)(_Frequency / 1000000)
+            , pSample->numOfCalls);
 
         fwprintf(fp, logBuffer);
         ++i;
