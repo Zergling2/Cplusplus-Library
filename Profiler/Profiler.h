@@ -20,8 +20,8 @@ private:
     void RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTime);
     std::map<std::wstring, ProfileSample*> _DataMap;
     LONGLONG _Frequency;
-    inline static const wchar_t szLine[] = L"----------------------------------------------------------------------------------------------------------\n";
-    inline static const wchar_t szItems[] = L"                   Name                  |     Average    |       Min      |       Max      |    Call    \n";
+    static const wchar_t* szLine;
+    static const wchar_t* szItems;
 private:
     struct ProfileSample
     {

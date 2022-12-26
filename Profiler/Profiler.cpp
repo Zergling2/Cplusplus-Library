@@ -6,9 +6,12 @@
 #include <locale.h>
 #include <stdio.h>
 
+const wchar_t* Profiler::szLine = L"----------------------------------------------------------------------------------------------------------\n";
+const wchar_t* Profiler::szItems = L"                   Name                  |     Average    |       Min      |       Max      |    Call    \n";
+
 Profiler::Profiler()
 {
-    _wsetlocale(LC_ALL, L"ko-KR");
+    _wsetlocale(LC_ALL, L"ko-kr");
     LARGE_INTEGER f;
     QueryPerformanceFrequency(&f);
     this->_Frequency = f.QuadPart;
