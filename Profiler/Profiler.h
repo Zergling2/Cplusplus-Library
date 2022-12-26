@@ -30,19 +30,6 @@ private:
 class Profiler
 {
 private:
-    struct ProfileSample;
-public:
-    Profiler();
-    ~Profiler();
-    void BeginRecord(const wchar_t* szTag);
-    inline void EndRecord(const wchar_t* szTag);
-    void SaveProfileToFile(const wchar_t* szFileName);
-private:
-    void RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTime);
-    std::map<CWideString<>, ProfileSample*> _DataMap;
-    LONGLONG _Frequency;
-    static const wchar_t* szItems;
-private:
     struct ProfileSample
     {
         friend Profiler;
@@ -56,6 +43,17 @@ private:
         ULONGLONG maximumTime; // 최대 사용시간 카운터 Time. (초단위로 계산하여 저장 / [0] 가장최대 [1] 다음 최대 [2])
         int numOfCalls; // 누적 호출 횟수
     };
+public:
+    Profiler();
+    ~Profiler();
+    void BeginRecord(const wchar_t* szTag);
+    inline void EndRecord(const wchar_t* szTag);
+    void SaveProfileToFile(const wchar_t* szFileName);
+private:
+    void RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTime);
+    std::map<CWideString<>, ProfileSample*> _DataMap;
+    LONGLONG _Frequency;
+    static const wchar_t* szItems;
 };
 
 inline void Profiler::EndRecord(const wchar_t* szTag)
