@@ -6,8 +6,7 @@
 #include <locale.h>
 #include <stdio.h>
 
-const wchar_t* Profiler::szLine = L"----------------------------------------------------------------------------------------------------------\n";
-const wchar_t* Profiler::szItems = L"                   Name                  |     Average    |       Min      |       Max      |    Call    \n";
+const wchar_t* Profiler::szItems = L"Name,Average,Min,Max,Call\n";
 
 Profiler::Profiler()
 {
@@ -19,8 +18,8 @@ Profiler::Profiler()
 
 Profiler::~Profiler()
 {
-    std::map<std::wstring, ProfileSample*>::iterator i = _DataMap.begin();
-    std::map<std::wstring, ProfileSample*>::iterator end = _DataMap.end();
+    std::map<CWideString<>, ProfileSample*>::iterator i = _DataMap.begin();
+    std::map<CWideString<>, ProfileSample*>::iterator end = _DataMap.end();
 
     while (i != end)
     {
@@ -32,13 +31,13 @@ Profiler::~Profiler()
 
 void Profiler::BeginRecord(const wchar_t* szTag)
 {
-    auto find = _DataMap.find(std::wstring(szTag));
+    auto find = _DataMap.find(szTag);
     ProfileSample* pSample;
 
     if (find == _DataMap.end())
     {
         pSample = new ProfileSample(szTag);
-        _DataMap.insert(std::make_pair(std::wstring(szTag), pSample));
+        _DataMap.emplace(szTag, pSample);
     }
     else
     {
@@ -52,7 +51,7 @@ void Profiler::BeginRecord(const wchar_t* szTag)
 
 void Profiler::RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTime)
 {    
-    auto find = _DataMap.find(std::wstring(szTag));
+    auto find = _DataMap.find(szTag);
     ProfileSample* pSample;
 
     if (find == _DataMap.end())
@@ -92,8 +91,10 @@ void Profiler::SaveProfileToFile(const wchar_t* szFileName)
 {
     FILE* fp;
     wchar_t logBuffer[256];
+    wchar_t szRealFileName[MAX_PATH + 4];
+    StringCbPrintfW(szRealFileName, sizeof(szRealFileName), L"%s.csv", szFileName);
 
-    errno_t e = _wfopen_s(&fp, szFileName, L"at");
+    errno_t e = _wfopen_s(&fp, szRealFileName, L"at");
     if (e != 0)
     {
         wprintf(L"_wfopen_s error!\n");
@@ -109,23 +110,38 @@ void Profiler::SaveProfileToFile(const wchar_t* szFileName)
         exit(-999);
     }
 
-    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d\n",
+#ifdef _DEBUG
+    #ifdef _WIN64
+    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,x64 Debug mode,\n",
         base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
         base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
+    #else
+    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,x86 Debug mode,\n",
+        base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
+        base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
+    #endif
+#else
+    #ifdef _WIN64
+    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,x64 Release mode,\n",
+        base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
+        base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
+    #else
+    StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%04d-%02d-%02d %02d:%02d:%02d,,,x86 Release mode,\n",
+        base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
+        base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
+    #endif
+#endif
 
-    fwprintf(fp, Profiler::szLine);
     fwprintf(fp, logBuffer);
-    fwprintf(fp, Profiler::szLine);
     fwprintf(fp, Profiler::szItems);
-    fwprintf(fp, Profiler::szLine);
 
-    std::map<std::wstring, ProfileSample*>::iterator i = _DataMap.begin();
-    std::map<std::wstring, ProfileSample*>::iterator end = _DataMap.end();
-
+    std::map<CWideString<>, ProfileSample*>::iterator i = _DataMap.begin();
+    std::map<CWideString<>, ProfileSample*>::iterator end = _DataMap.end();
     while (i != end)
     {
         ProfileSample* pSample = i->second;
-        StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%-40s | %12.4fレs | %12.4fレs | %12.4fレs | %6d\n",
+
+        StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%s,%fレs,%fレs,%fレs,%d\n",
             pSample->tag.c_str(),
             pSample->numOfCalls <= 2 ? (pSample->totalTime) / (double)(_Frequency / 1000000) / pSample->numOfCalls
             :
@@ -133,18 +149,17 @@ void Profiler::SaveProfileToFile(const wchar_t* szFileName)
             (pSample->minimumTime) / (double)(_Frequency / 1000000),
             (pSample->maximumTime) / (double)(_Frequency / 1000000),
             pSample->numOfCalls);
-        fwprintf(fp, logBuffer);
 
+        fwprintf(fp, logBuffer);
         ++i;
     }
-
-    fwprintf(fp, Profiler::szLine);
+    fwprintf(fp, L"\n");
 
     fclose(fp);
 }
 
-Profiler::ProfileSample::ProfileSample(std::wstring tag)
-    : tag(tag)
+Profiler::ProfileSample::ProfileSample(const wchar_t* szTag)
+    : tag(szTag)
     , lastStartTime(0)
     , totalTime(0)
     , minimumTime(0)
