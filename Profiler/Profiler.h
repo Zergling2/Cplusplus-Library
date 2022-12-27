@@ -6,6 +6,11 @@
 #include <Windows.h>
 #undef _WINSOCKAPI_
 
+#define TLS_SET_VALUE_FAILED ((DWORD)0x00000000)
+#define PROFILE_ARRAY_OVERFLOW ((DWORD)0x00000001)
+
+#define PROFILING_THREAD() Profiler::InitializeThreadForProfiling()
+
 enum CWideStringLength
 {
     DEFAULT_LENGTH = 47 + 1 // Include '\0'
@@ -27,8 +32,38 @@ private:
     wchar_t _Data[N];
 };
 
+class ProfilerException
+{
+public:
+    inline ProfilerException(int errorCode) : errorCode(errorCode) {}
+    void Report() const
+    {
+        switch (this->errorCode)
+        {
+        case TLS_OUT_OF_INDEXES:
+            wprintf(L"TlsAlloc function failed!\n");
+            break;
+        case TLS_SET_VALUE_FAILED:
+            wprintf(L"TlsSetValue function failed!\n");
+            break;
+        case PROFILE_ARRAY_OVERFLOW:
+            wprintf(L"The array size of the data map is insufficient!\n");
+            break;
+        default:
+            wprintf(L"Profiler error occurred!\n");
+            break;
+        }
+    }
+private:
+    int errorCode;
+};
+
 class Profiler
 {
+    enum ThreadCount
+    {
+        COUNT = 40
+    };
 private:
     struct ProfileSample
     {
@@ -36,6 +71,7 @@ private:
     public:
         ProfileSample(const wchar_t* szTag);
     private:
+        int tid;
         CWideString<> tag; // 프로파일 샘플 이름
         ULONGLONG lastStartTime; // 프로파일 샘플 실행 시간.
         ULONGLONG totalTime; // 전체 사용시간 카운터 Time. (출력시 호출회수로 나누어 평균 구함)
@@ -43,17 +79,24 @@ private:
         ULONGLONG maximumTime; // 최대 사용시간 카운터 Time. (초단위로 계산하여 저장 / [0] 가장최대 [1] 다음 최대 [2])
         int numOfCalls; // 누적 호출 횟수
     };
-public:
+private:
     Profiler();
     ~Profiler();
+public:
+    inline static Profiler& GetInstance() { return Profiler::_Instance; }
+    static void InitializeThreadForProfiling() throw();
     void BeginRecord(const wchar_t* szTag);
     inline void EndRecord(const wchar_t* szTag);
-    void SaveProfileToFile(const wchar_t* szFileName);
+    void SaveProfile(const wchar_t* szFileName);
 private:
     void RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTime);
-    std::map<CWideString<>, ProfileSample*> _DataMap;
+    LONG GetUniqueIndex();
+    inline DWORD GetTLSIndex() { return this->_TLSIndex; }
+    std::map<CWideString<>, ProfileSample*> _DataMap[ThreadCount::COUNT];
     LONGLONG _Frequency;
-    static const wchar_t* szItems;
+    DWORD _TLSIndex;
+    LONG _ProfileInfoArrayIndex;
+    static Profiler _Instance;
 };
 
 inline void Profiler::EndRecord(const wchar_t* szTag)
@@ -63,4 +106,3 @@ inline void Profiler::EndRecord(const wchar_t* szTag)
 
     RecordEndRequestHandler(szTag, endTime);
 }
-
