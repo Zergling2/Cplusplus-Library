@@ -71,14 +71,14 @@ private:
     public:
         ProfileSample(const wchar_t* szTag);
     private:
-        BOOL isValid;
-        int tid;
-        CWideString<> tag; // 프로파일 샘플 이름
-        ULONGLONG lastStartTime; // 프로파일 샘플 실행 시간.
-        ULONGLONG totalTime; // 전체 사용시간 카운터 Time. (출력시 호출회수로 나누어 평균 구함)
-        ULONGLONG minimumTime; // 최소 사용시간 카운터 Time. (초단위로 계산하여 저장 / [0] 가장최소 [1] 다음 최소 [2])
-        ULONGLONG maximumTime; // 최대 사용시간 카운터 Time. (초단위로 계산하여 저장 / [0] 가장최대 [1] 다음 최대 [2])
-        int numOfCalls; // 누적 호출 횟수
+        BOOL _Flag;
+        int _tid;
+        CWideString<> _Tag;         // Name of profile sample
+        ULONGLONG _LastTimeBegan;
+        ULONGLONG _TotalTime;
+        ULONGLONG _MinumumTime;
+        ULONGLONG _MaximumTime;
+        int _NumOfCalls;
     };
 private:
     Profiler();

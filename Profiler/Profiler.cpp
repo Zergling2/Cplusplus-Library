@@ -68,7 +68,7 @@ void Profiler::BeginRecord(const wchar_t* szTag)
 
     LARGE_INTEGER currentTime;
     QueryPerformanceCounter(&currentTime);
-    pSample->lastStartTime = currentTime.QuadPart;
+    pSample->_LastTimeBegan = currentTime.QuadPart;
 }
 
 void Profiler::RecordEndRequestHandler(const wchar_t* szTag, const LARGE_INTEGER endTime)
@@ -88,27 +88,27 @@ void Profiler::RecordEndRequestHandler(const wchar_t* szTag, const LARGE_INTEGER
     }
 
     AcquireSRWLockExclusive(&this->_SRWLock[idx]);
-    ULONGLONG interval = endTime.QuadPart - pSample->lastStartTime;
-    pSample->totalTime += interval;
+    ULONGLONG interval = endTime.QuadPart - pSample->_LastTimeBegan;
+    pSample->_TotalTime += interval;
 
-    if (pSample->numOfCalls == 0)
+    if (pSample->_NumOfCalls == 0)
     {
-        pSample->minimumTime = pSample->maximumTime = interval;
+        pSample->_MinumumTime = pSample->_MaximumTime = interval;
     }
     else
     {
-        if (interval < pSample->minimumTime)
+        if (interval < pSample->_MinumumTime)
         {
-            pSample->minimumTime = interval;
+            pSample->_MinumumTime = interval;
         }
 
-        if (interval > pSample->maximumTime)
+        if (interval > pSample->_MaximumTime)
         {
-            pSample->maximumTime = interval;
+            pSample->_MaximumTime = interval;
         }
     }
-    pSample->numOfCalls += 1;
-    pSample->isValid = TRUE;
+    pSample->_NumOfCalls += 1;
+    pSample->_Flag = TRUE;
     ReleaseSRWLockExclusive(&this->_SRWLock[idx]);
 }
 
@@ -176,20 +176,20 @@ void Profiler::SaveProfile(const wchar_t* szFileName)
         {
             ProfileSample* pSample = iter->second;
             AcquireSRWLockShared(&this->_SRWLock[i]);
-            if (pSample->isValid == FALSE)
+            if (pSample->_Flag == FALSE)
             {
                 ReleaseSRWLockShared(&this->_SRWLock[i]);
                 continue;
             }
 
             StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%d,%s,%f¥ìs,%f¥ìs,%f¥ìs,%d\n"
-                , pSample->tid
-                , pSample->tag.c_str()
-                , pSample->numOfCalls <= 2 ? (pSample->totalTime) / (double)(_Frequency / 1000000) / pSample->numOfCalls :
-                (pSample->totalTime - (pSample->maximumTime + pSample->minimumTime)) / (double)(_Frequency / 1000000) / (pSample->numOfCalls - 2)
-                , (pSample->minimumTime) / (double)(_Frequency / 1000000)
-                , (pSample->maximumTime) / (double)(_Frequency / 1000000)
-                , pSample->numOfCalls);
+                , pSample->_tid
+                , pSample->_Tag.c_str()
+                , pSample->_NumOfCalls <= 2 ? (pSample->_TotalTime) / (double)(_Frequency / 1000000) / pSample->_NumOfCalls :
+                (pSample->_TotalTime - (pSample->_MaximumTime + pSample->_MinumumTime)) / (double)(_Frequency / 1000000) / (pSample->_NumOfCalls - 2)
+                , (pSample->_MinumumTime) / (double)(_Frequency / 1000000)
+                , (pSample->_MaximumTime) / (double)(_Frequency / 1000000)
+                , pSample->_NumOfCalls);
 
             fwprintf(fp, logBuffer);
             ReleaseSRWLockShared(&this->_SRWLock[i]);
@@ -201,13 +201,13 @@ void Profiler::SaveProfile(const wchar_t* szFileName)
 }
 
 Profiler::ProfileSample::ProfileSample(const wchar_t* szTag)
-    : isValid(FALSE)
-    , tid(GetCurrentThreadId())
-    , tag(szTag)
-    , lastStartTime(0)
-    , totalTime(0)
-    , minimumTime(0)
-    , maximumTime(0)
-    , numOfCalls(0)
+    : _Flag(FALSE)
+    , _tid(GetCurrentThreadId())
+    , _Tag(szTag)
+    , _LastTimeBegan(0)
+    , _TotalTime(0)
+    , _MinumumTime(0)
+    , _MaximumTime(0)
+    , _NumOfCalls(0)
 {
 }
