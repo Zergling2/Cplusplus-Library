@@ -71,6 +71,7 @@ private:
     public:
         ProfileSample(const wchar_t* szTag);
     private:
+        BOOL isValid;
         int tid;
         CWideString<> tag; // 프로파일 샘플 이름
         ULONGLONG lastStartTime; // 프로파일 샘플 실행 시간.
@@ -84,15 +85,16 @@ private:
     ~Profiler();
 public:
     inline static Profiler& GetInstance() { return Profiler::_Instance; }
-    static void InitializeThreadForProfiling() throw();
+    static void InitializeThreadForProfiling();
     void BeginRecord(const wchar_t* szTag);
     inline void EndRecord(const wchar_t* szTag);
     void SaveProfile(const wchar_t* szFileName);
 private:
-    void RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTime);
+    void RecordEndRequestHandler(const wchar_t* szTag, const LARGE_INTEGER endTime);
     LONG GetUniqueIndex();
     inline DWORD GetTLSIndex() { return this->_TLSIndex; }
     std::map<CWideString<>, ProfileSample*> _DataMap[ThreadCount::COUNT];
+    SRWLOCK _SRWLock[ThreadCount::COUNT];
     LONGLONG _Frequency;
     DWORD _TLSIndex;
     LONG _ProfileInfoArrayIndex;

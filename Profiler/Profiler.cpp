@@ -16,6 +16,9 @@ Profiler::Profiler()
     QueryPerformanceFrequency(&f);
     this->_Frequency = f.QuadPart;
 
+    for (int i = 0; i < Profiler::ThreadCount::COUNT; i++)
+        InitializeSRWLock(&this->_SRWLock[i]);
+
     this->_TLSIndex = TlsAlloc();
     if (this->_TLSIndex == TLS_OUT_OF_INDEXES)
         throw ProfilerException(TLS_OUT_OF_INDEXES);
@@ -39,9 +42,9 @@ Profiler::~Profiler()
     TlsFree(this->_TLSIndex);
 }
 
-void Profiler::InitializeThreadForProfiling() throw()
+void Profiler::InitializeThreadForProfiling()
 {
-    LONG myIndex = Profiler::GetInstance().GetUniqueIndex();
+    SIZE_T myIndex = static_cast<SIZE_T>(Profiler::GetInstance().GetUniqueIndex());
     BOOL ret = TlsSetValue(Profiler::GetInstance().GetTLSIndex(), reinterpret_cast<LPVOID>(myIndex));
     if (ret == 0)
         throw ProfilerException(TLS_SET_VALUE_FAILED);
@@ -49,7 +52,7 @@ void Profiler::InitializeThreadForProfiling() throw()
 
 void Profiler::BeginRecord(const wchar_t* szTag)
 {
-    DWORD idx = reinterpret_cast<DWORD>(TlsGetValue(this->_TLSIndex));
+    SIZE_T idx = reinterpret_cast<SIZE_T>(TlsGetValue(this->_TLSIndex));
     auto find = _DataMap[idx].find(szTag);
     ProfileSample* pSample;
 
@@ -68,9 +71,9 @@ void Profiler::BeginRecord(const wchar_t* szTag)
     pSample->lastStartTime = currentTime.QuadPart;
 }
 
-void Profiler::RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTime)
+void Profiler::RecordEndRequestHandler(const wchar_t* szTag, const LARGE_INTEGER endTime)
 {
-    DWORD idx = reinterpret_cast<DWORD>(TlsGetValue(this->_TLSIndex));
+    SIZE_T idx = reinterpret_cast<SIZE_T>(TlsGetValue(this->_TLSIndex));
     auto find = _DataMap[idx].find(szTag);
     ProfileSample* pSample;
 
@@ -84,6 +87,7 @@ void Profiler::RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTi
         pSample = find->second;
     }
 
+    AcquireSRWLockExclusive(&this->_SRWLock[idx]);
     ULONGLONG interval = endTime.QuadPart - pSample->lastStartTime;
     pSample->totalTime += interval;
 
@@ -103,8 +107,9 @@ void Profiler::RecordEndRequestHandler(const wchar_t* szTag, LARGE_INTEGER endTi
             pSample->maximumTime = interval;
         }
     }
-
     pSample->numOfCalls += 1;
+    pSample->isValid = TRUE;
+    ReleaseSRWLockExclusive(&this->_SRWLock[idx]);
 }
 
 LONG Profiler::GetUniqueIndex()
@@ -112,6 +117,8 @@ LONG Profiler::GetUniqueIndex()
     LONG ret = _InterlockedIncrement(&this->_ProfileInfoArrayIndex);
     if (ret >= Profiler::ThreadCount::COUNT)
         throw ProfilerException(PROFILE_ARRAY_OVERFLOW);
+    
+    return ret;
 }
 
 void Profiler::SaveProfile(const wchar_t* szFileName)
@@ -164,11 +171,16 @@ void Profiler::SaveProfile(const wchar_t* szFileName)
 
     for (LONG i = 0; i <= this->_ProfileInfoArrayIndex; i++)
     {
-        std::map<CWideString<>, ProfileSample*>::iterator iter = _DataMap[i].begin();
         std::map<CWideString<>, ProfileSample*>::iterator end = _DataMap[i].end();
-        while (iter != end)
+        for (std::map<CWideString<>, ProfileSample*>::iterator iter = _DataMap[i].begin(); iter != end; ++iter)
         {
             ProfileSample* pSample = iter->second;
+            AcquireSRWLockShared(&this->_SRWLock[i]);
+            if (pSample->isValid == FALSE)
+            {
+                ReleaseSRWLockShared(&this->_SRWLock[i]);
+                continue;
+            }
 
             StringCbPrintfW(logBuffer, sizeof(logBuffer), L"%d,%s,%f¥ìs,%f¥ìs,%f¥ìs,%d\n"
                 , pSample->tid
@@ -180,17 +192,17 @@ void Profiler::SaveProfile(const wchar_t* szFileName)
                 , pSample->numOfCalls);
 
             fwprintf(fp, logBuffer);
-            ++iter;
+            ReleaseSRWLockShared(&this->_SRWLock[i]);
         }
         fwprintf(fp, L"-,-,-,-,-,-\n");
     }
     fwprintf(fp, L"\n");
-
     fclose(fp);
 }
 
 Profiler::ProfileSample::ProfileSample(const wchar_t* szTag)
-    : tid(GetCurrentThreadId())
+    : isValid(FALSE)
+    , tid(GetCurrentThreadId())
     , tag(szTag)
     , lastStartTime(0)
     , totalTime(0)
