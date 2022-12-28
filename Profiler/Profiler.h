@@ -9,7 +9,7 @@
 #define TLS_SET_VALUE_FAILED ((DWORD)0x00000000)
 #define PROFILE_ARRAY_OVERFLOW ((DWORD)0x00000001)
 
-#define PROFILING_THREAD() Profiler::InitializeThreadForProfiling()
+#define PROFILING_THREAD Profiler::InitializeThreadForProfiling();
 
 enum CWideStringLength
 {
