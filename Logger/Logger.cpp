@@ -14,6 +14,8 @@ CFileLogger::CFileLogger(const std::wstring& logFileName, bool bAppendTimeToFile
 {
 	if (bAppendTimeToFileName)
 		AppendTimeToFileName();
+
+	this->logFileName.append(L".txt");
 }
 
 CFileLogger::CFileLogger(const wchar_t* logFileName, bool bAppendTimeToFileName) :
@@ -21,6 +23,8 @@ CFileLogger::CFileLogger(const wchar_t* logFileName, bool bAppendTimeToFileName)
 {
 	if (bAppendTimeToFileName)
 		AppendTimeToFileName();
+
+	this->logFileName.append(L".txt");
 }
 
 bool CFileLogger::WriteLog(const std::wstring& logString, LogType type)
@@ -79,7 +83,7 @@ void CFileLogger::AppendTimeToFileName()
 	errno_t e = localtime_s(&base_date_local, &base_time);
 	wchar_t buffer[50];
 
-	StringCbPrintfW(buffer, sizeof(buffer), L"%04d%02d%02d_%02d%02d%02d.txt",
+	StringCbPrintfW(buffer, sizeof(buffer), L"%04d%02d%02d_%02d%02d%02d",
 		base_date_local.tm_year + 1900, base_date_local.tm_mon + 1, base_date_local.tm_mday,
 		base_date_local.tm_hour, base_date_local.tm_min, base_date_local.tm_sec);
 
