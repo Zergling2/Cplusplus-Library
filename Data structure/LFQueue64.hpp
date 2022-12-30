@@ -73,7 +73,7 @@ namespace SJNET
 			CLFQueue64Node* volatile pTempHead;
 			CLFQueue64Node* volatile pTempHeadNext;
 			CLFQueue64Node* volatile pTempTail;
-			do
+			for (;;)
 			{
 				pTempTail = this->_pTail;
 				pTempHead = this->_pHead;
@@ -99,8 +99,9 @@ namespace SJNET
 						// CAS 성공 후 나가서 하면 재사용된 노드의 data 필드를 얻어오는 결함이 발생할 수 있다.
 				}
 
-				// _pNext에 스탬프가 없으므로 OR연산만으로 덮어쓰게 작성된 코드
-			} while (pTempHead != InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&this->_pHead), reinterpret_cast<PVOID>(reinterpret_cast<ULONG64>(pTempHeadNext) | (GetLFStamp(pTempHead) + LF_MASK_INC)), pTempHead));
+				if (pTempHead == InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&this->_pHead), reinterpret_cast<PVOID>(reinterpret_cast<ULONG64>(pTempHeadNext) | (GetLFStamp(pTempHead) + LF_MASK_INC)), pTempHead))
+					break;
+			}
 
 			_NodePool.ReturnObjectToPool(reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempHead)));		// 더미 노드로 쓰였던 노드를 해제한다.
 			return true;
