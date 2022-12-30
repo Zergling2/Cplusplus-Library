@@ -48,7 +48,7 @@ LONG CALLBACK CDumper::CustomExceptionFilter(_In_ PEXCEPTION_POINTERS pException
 	SJNET::API::CConsoleLogger::WriteLog(L"Crash Error!!!", LogType::LT_CRITICAL);
 	SJNET::API::CConsoleLogger::WriteLog(L"Saving dump file...", LogType::LT_SYSTEM);
 
-	HANDLE hDumpFile = CreateFile(szFileName, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hDumpFile = CreateFileW(szFileName, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hDumpFile != INVALID_HANDLE_VALUE)
 	{
 		MINIDUMP_EXCEPTION_INFORMATION stMinidumpExceptionInformation;
