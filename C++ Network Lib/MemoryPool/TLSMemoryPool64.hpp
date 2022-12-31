@@ -7,6 +7,8 @@
 #undef _WINSOCKAPI
 #include <list>
 
+constexpr DWORD BIT_SCAN_SIZE = 64;
+
 enum class TLSMPDestructorOpt
 {
 	AUTO,
@@ -31,17 +33,17 @@ private:
 		{
 			inline void* operator new(size_t size);
 			inline void operator delete(void* _Block);
-			inline CTLSMPBucket() : _Flag(0x7FFFFFFFFFFFFFFF)
+			inline CTLSMPBucket() : _Flag(0xFFFFFFFFFFFFFFFE)
 			{
 				ULONG64 mask = 0x8000000000000000;
-				for (int i = 0; i < 64; i++)
+				for (int i = 0; i < BIT_SCAN_SIZE; i++)
 				{
 					reinterpret_cast<CTLSMPNode*>(_Buffer)[i]._Mask = mask;
 					reinterpret_cast<CTLSMPNode*>(_Buffer)[i]._pFlag = &this->_Flag;
 					mask >>= 1;
 				}
 			}
-			BYTE _Buffer[sizeof(CTLSMPNode) * 64];
+			BYTE _Buffer[sizeof(CTLSMPNode) * BIT_SCAN_SIZE];
 			LONG64 _Flag;
 		};
 	public:
@@ -79,10 +81,7 @@ void CTLSMemoryPool64<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
 {
 	CTLSMPCore* pCore = reinterpret_cast<CTLSMPCore*>(TlsGetValue(CTLSMemoryPool64<ObjectType, opt>::_TLSIndex));
 	if (pCore == NULL)
-	{
-		pCore = new CTLSMPCore;
-		TlsSetValue(CTLSMemoryPool64<ObjectType, opt>::_TLSIndex, reinterpret_cast<LPVOID>(pCore));
-	}
+		*reinterpret_cast<int*>(0x0) = 0;		// 존재하지도 않는 풀에 Free를 요청한 경우
 	pCore->ReturnObjectToPool(pObj);
 }
 
@@ -91,11 +90,11 @@ CTLSMemoryPool64<ObjectType, opt>::CTLSMemoryPool64()
 {
 	DWORD newIndex = TlsAlloc();
 	if (newIndex == TLS_OUT_OF_INDEXES)
-		*reinterpret_cast<int*>(0x00000000) = 0;
+		*reinterpret_cast<int*>(0x0) = 0;
 	CTLSMemoryPool64<ObjectType, opt>::_TLSIndex = newIndex;
 	CTLSMemoryPool64<ObjectType, opt>::_HeapHandle = HeapCreate(0, static_cast<SIZE_T>(4096) * 16, 0);
 	if (CTLSMemoryPool64<ObjectType, opt>::_HeapHandle == NULL)
-		*reinterpret_cast<int*>(0x00000000) = 0;
+		*reinterpret_cast<int*>(0x0) = 0;
 }
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
@@ -121,15 +120,21 @@ ObjectType* CTLSMemoryPool64<ObjectType, opt>::CTLSMPCore::GetObjectFromPool(Typ
 		if (ret != 0)
 		{
 			// 인덱스번째에 옵젝 사용 가능
-			pNode = reinterpret_cast<CTLSMPNode*>(&reinterpret_cast<CTLSMPNode*>((*iter)->_Buffer)[63 - index]);
+			pNode = reinterpret_cast<CTLSMPNode*>(&reinterpret_cast<CTLSMPNode*>((*iter)->_Buffer)[BIT_SCAN_SIZE - 1 - index]);
 			new (pNode) ObjectType(args...);
-			while ((*iter)->_Flag != InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(&(*iter)->_Flag), (*iter)->_Flag & ~(pNode->_Mask), (*iter)->_Flag));
+			LONG64 com;
+			LONG64 mask = ~(pNode->_Mask);
+			do
+			{
+				com = *(pNode->_pFlag);
+			} while (com != InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(pNode->_pFlag), (*iter)->_Flag & mask, com));
+
 			return reinterpret_cast<ObjectType*>(pNode);
 		}
 	}
 
 	CTLSMPBucket* pNewBucket = new CTLSMPBucket;
-	pNode = &reinterpret_cast<CTLSMPNode*>(pNewBucket->_Buffer)[0];
+	pNode = &reinterpret_cast<CTLSMPNode*>(pNewBucket->_Buffer)[BIT_SCAN_SIZE - 1];
 	new (pNode) ObjectType(args...);
 	_BucketList.push_front(pNewBucket);		// 새로 만든 버킷이 가장 우선적으로 탐색되게 한다.
 
@@ -141,8 +146,13 @@ void CTLSMemoryPool64<ObjectType, opt>::CTLSMPCore::ReturnObjectToPool(ObjectTyp
 {
 	if constexpr (opt == TLSMPDestructorOpt::AUTO)
 		pObj->~ObjectType();
-	CTLSMPNode* pNode = reinterpret_cast<CTLSMPNode*>(pObj);
-	while (*(pNode->_pFlag) != InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(pNode->_pFlag), *(pNode->_pFlag) | pNode->_Mask, *(pNode->_pFlag)));
+	volatile  CTLSMPNode* pNode = reinterpret_cast<CTLSMPNode*>(pObj);
+
+	LONG64 com;
+	do
+	{
+		com = *(pNode->_pFlag);
+	} while (com != InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(pNode->_pFlag), *(pNode->_pFlag) | pNode->_Mask, com));
 }
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
