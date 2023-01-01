@@ -53,19 +53,43 @@ private:
 		std::list<CTLSMPBucket*> _BucketList;
 	};
 public:
-	template<typename ...Types> static ObjectType* GetObjectFromPool(Types ...args);
-	static void ReturnObjectToPool(ObjectType* pObj);
 	CTLSMemoryPool64();
 	~CTLSMemoryPool64();
+	template<typename ...Types> inline static ObjectType* GetObjectFromPool(Types ...args);
+	inline static void ReturnObjectToPool(ObjectType* pObj);
 private:
 	static CTLSMemoryPool64 _TLSAllocater;
 	static DWORD _TLSIndex;
 	static HANDLE _HeapHandle;
+	static LONG _InstanceCount;
 };
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
+CTLSMemoryPool64<ObjectType, opt>::CTLSMemoryPool64()
+{
+	if (CTLSMemoryPool64<ObjectType, opt>::_InstanceCount != 0)
+		*reinterpret_cast<int*>(0x0) = 0;
+	DWORD newIndex = TlsAlloc();
+	if (newIndex == TLS_OUT_OF_INDEXES)
+		*reinterpret_cast<int*>(0x0) = 0;
+	CTLSMemoryPool64<ObjectType, opt>::_TLSIndex = newIndex;
+	CTLSMemoryPool64<ObjectType, opt>::_HeapHandle = HeapCreate(0, static_cast<SIZE_T>(4096) * 16, 0);
+	if (CTLSMemoryPool64<ObjectType, opt>::_HeapHandle == NULL)
+		*reinterpret_cast<int*>(0x0) = 0;
+
+	_InstanceCount++;
+}
+
+template<typename ObjectType, TLSMPDestructorOpt opt>
+CTLSMemoryPool64<ObjectType, opt>::~CTLSMemoryPool64()
+{
+	TlsFree(CTLSMemoryPool64<ObjectType, opt>::_TLSIndex);
+	HeapDestroy(CTLSMemoryPool64<ObjectType, opt>::_HeapHandle);
+}
+
+template<typename ObjectType, TLSMPDestructorOpt opt>
 template<typename ...Types>
-ObjectType* CTLSMemoryPool64<ObjectType, opt>::GetObjectFromPool(Types ...args)
+inline ObjectType* CTLSMemoryPool64<ObjectType, opt>::GetObjectFromPool(Types ...args)
 {
 	CTLSMPCore* pCore = reinterpret_cast<CTLSMPCore*>(TlsGetValue(CTLSMemoryPool64<ObjectType, opt>::_TLSIndex));
 	if (pCore == NULL)
@@ -77,31 +101,12 @@ ObjectType* CTLSMemoryPool64<ObjectType, opt>::GetObjectFromPool(Types ...args)
 }
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
-void CTLSMemoryPool64<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
+inline void CTLSMemoryPool64<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
 {
 	CTLSMPCore* pCore = reinterpret_cast<CTLSMPCore*>(TlsGetValue(CTLSMemoryPool64<ObjectType, opt>::_TLSIndex));
 	if (pCore == NULL)
 		*reinterpret_cast<int*>(0x0) = 0;		// 존재하지도 않는 풀에 Free를 요청한 경우
 	pCore->ReturnObjectToPool(pObj);
-}
-
-template<typename ObjectType, TLSMPDestructorOpt opt>
-CTLSMemoryPool64<ObjectType, opt>::CTLSMemoryPool64()
-{
-	DWORD newIndex = TlsAlloc();
-	if (newIndex == TLS_OUT_OF_INDEXES)
-		*reinterpret_cast<int*>(0x0) = 0;
-	CTLSMemoryPool64<ObjectType, opt>::_TLSIndex = newIndex;
-	CTLSMemoryPool64<ObjectType, opt>::_HeapHandle = HeapCreate(0, static_cast<SIZE_T>(4096) * 16, 0);
-	if (CTLSMemoryPool64<ObjectType, opt>::_HeapHandle == NULL)
-		*reinterpret_cast<int*>(0x0) = 0;
-}
-
-template<typename ObjectType, TLSMPDestructorOpt opt>
-CTLSMemoryPool64<ObjectType, opt>::~CTLSMemoryPool64()
-{
-	TlsFree(CTLSMemoryPool64<ObjectType, opt>::_TLSIndex);
-	HeapDestroy(CTLSMemoryPool64<ObjectType, opt>::_HeapHandle);
 }
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
@@ -175,3 +180,6 @@ HANDLE CTLSMemoryPool64<ObjectType, opt>::_HeapHandle = NULL;
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
 CTLSMemoryPool64<ObjectType, opt> CTLSMemoryPool64<ObjectType, opt>::_TLSAllocater;
+
+template<typename ObjectType, TLSMPDestructorOpt opt>
+LONG CTLSMemoryPool64<ObjectType, opt>::_InstanceCount = 0;
