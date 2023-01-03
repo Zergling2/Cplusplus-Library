@@ -27,7 +27,7 @@ public:
     inline CWideString<N>& operator=(const wchar_t* rhs) { wcscpy_s(this->_Data, sizeof(_Data) / sizeof(wchar_t), rhs); }
     inline bool operator==(const CWideString<N>& that) const { return wcscmp(this->_Data, that._Data) ? false : true; }
     inline bool operator<(const CWideString<N>& that) const { return wcscmp(this->_Data, that._Data) < 0 ? true : false; }
-    inline const wchar_t* c_str() { return this->_Data; }
+    inline const wchar_t* c_str() const { return this->_Data; }
 private:
     wchar_t _Data[N];
 };
@@ -73,32 +73,28 @@ private:
     private:
         BOOL _Flag;
         int _tid;
-        CWideString<> _Tag;         // Name of profile sample
         ULONGLONG _LastTimeBegan;
         ULONGLONG _TotalTime;
         ULONGLONG _MinumumTime;
         ULONGLONG _MaximumTime;
         int _NumOfCalls;
     };
+public:
+    static void InitializeThreadForProfiling();
+    static void BeginRecord(const wchar_t* szTag);
+    inline static void EndRecord(const wchar_t* szTag);
+    static void SaveProfile(const wchar_t* szFileName);
 private:
     Profiler();
     ~Profiler();
-public:
-    inline static Profiler& GetInstance() { return Profiler::_Instance; }
-    static void InitializeThreadForProfiling();
-    void BeginRecord(const wchar_t* szTag);
-    inline void EndRecord(const wchar_t* szTag);
-    void SaveProfile(const wchar_t* szFileName);
-private:
-    void RecordEndRequestHandler(const wchar_t* szTag, const LARGE_INTEGER endTime);
-    LONG GetUniqueIndex();
-    inline DWORD GetTLSIndex() { return this->_TLSIndex; }
-    std::map<CWideString<>, ProfileSample*> _DataMap[ThreadCount::COUNT];
-    SRWLOCK _SRWLock[ThreadCount::COUNT];
-    LONGLONG _Frequency;
-    DWORD _TLSIndex;
-    LONG _ProfileInfoArrayIndex;
-    static Profiler _Instance;
+    static void RecordEndRequestHandler(const wchar_t* szTag, const LARGE_INTEGER endTime);
+    static LONG GetUniqueSampleArrayIndex();
+    static Profiler Initializer;
+    static std::map<CWideString<>, ProfileSample*>* DataMapArray;
+    static SRWLOCK SRWLock[ThreadCount::COUNT];
+    static LONGLONG Frequency;
+    static DWORD TLSIndex;
+    static LONG ProfilingThreadCount;
 };
 
 inline void Profiler::EndRecord(const wchar_t* szTag)
