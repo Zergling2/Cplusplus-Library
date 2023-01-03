@@ -114,7 +114,6 @@ template<typename ...Types>
 ObjectType* CTLSMemoryPool64<ObjectType, opt>::CTLSMPCore::New(Types ...args)
 {
 	DWORD index;
-	BOOLEAN find = false;
 	BOOLEAN ret;
 	CTLSMPNode* pNode;
 
