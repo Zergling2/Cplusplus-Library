@@ -21,12 +21,12 @@ struct CWideString
 {
 public:
     inline CWideString() { this->_Data[0] = L'\0'; }
-    inline CWideString(const CWideString<N>& cb) { wcscpy_s(this->_Data, sizeof(_Data) / sizeof(wchar_t), cb._Data); }
+    inline CWideString(const CWideString& cb) { wcscpy_s(this->_Data, sizeof(_Data) / sizeof(wchar_t), cb._Data); }
     inline CWideString(const wchar_t* p) { wcscpy_s(this->_Data, sizeof(_Data) / sizeof(wchar_t), p); }
-    inline CWideString<N>& operator=(const CWideString<N>& rhs) { wcscpy_s(this->_Data, sizeof(_Data) / sizeof(wchar_t), rhs._Data); }
-    inline CWideString<N>& operator=(const wchar_t* rhs) { wcscpy_s(this->_Data, sizeof(_Data) / sizeof(wchar_t), rhs); }
-    inline bool operator==(const CWideString<N>& that) const { return wcscmp(this->_Data, that._Data) ? false : true; }
-    inline bool operator<(const CWideString<N>& that) const { return wcscmp(this->_Data, that._Data) < 0 ? true : false; }
+    inline CWideString& operator=(const CWideString& rhs) { wcscpy_s(this->_Data, sizeof(_Data) / sizeof(wchar_t), rhs._Data); }
+    inline CWideString& operator=(const wchar_t* rhs) { wcscpy_s(this->_Data, sizeof(_Data) / sizeof(wchar_t), rhs); }
+    inline bool operator==(const CWideString& that) const { return wcscmp(this->_Data, that._Data) ? false : true; }
+    inline bool operator<(const CWideString& that) const { return wcscmp(this->_Data, that._Data) < 0 ? true : false; }
     inline const wchar_t* c_str() const { return this->_Data; }
 private:
     wchar_t _Data[N];
