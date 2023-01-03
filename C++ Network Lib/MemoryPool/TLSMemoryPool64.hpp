@@ -58,33 +58,32 @@ public:
 	template<typename ...Types> inline static ObjectType* New(Types ...args);
 	inline static void Delete(ObjectType* pObj);
 private:
-	static CTLSMemoryPool64 Initializer;
 	static DWORD TLSIndex;
-	static HANDLE _HeapHandle;
-	static LONG _InstanceCount;
+	static HANDLE TLSMPHeapHandle;
+	static LONG InstanceCount;
 };
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
 CTLSMemoryPool64<ObjectType, opt>::CTLSMemoryPool64()
 {
-	if (CTLSMemoryPool64<ObjectType, opt>::_InstanceCount != 0)
+	if (CTLSMemoryPool64<ObjectType, opt>::InstanceCount != 0)
 		*reinterpret_cast<int*>(0x0) = 0;
 	DWORD newIndex = TlsAlloc();
 	if (newIndex == TLS_OUT_OF_INDEXES)
 		*reinterpret_cast<int*>(0x0) = 0;
 	CTLSMemoryPool64<ObjectType, opt>::TLSIndex = newIndex;
-	CTLSMemoryPool64<ObjectType, opt>::_HeapHandle = HeapCreate(0, static_cast<SIZE_T>(4096) * 16, 0);
-	if (CTLSMemoryPool64<ObjectType, opt>::_HeapHandle == NULL)
+	CTLSMemoryPool64<ObjectType, opt>::TLSMPHeapHandle = HeapCreate(0, static_cast<SIZE_T>(4096) * 16, 0);
+	if (CTLSMemoryPool64<ObjectType, opt>::TLSMPHeapHandle == NULL)
 		*reinterpret_cast<int*>(0x0) = 0;
 
-	_InstanceCount++;
+	CTLSMemoryPool64<ObjectType, opt>::InstanceCount++;
 }
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
 CTLSMemoryPool64<ObjectType, opt>::~CTLSMemoryPool64()
 {
 	TlsFree(CTLSMemoryPool64<ObjectType, opt>::TLSIndex);
-	HeapDestroy(CTLSMemoryPool64<ObjectType, opt>::_HeapHandle);
+	HeapDestroy(CTLSMemoryPool64<ObjectType, opt>::TLSMPHeapHandle);
 }
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
@@ -162,23 +161,20 @@ void CTLSMemoryPool64<ObjectType, opt>::CTLSMPCore::Delete(ObjectType* pObj)
 template<typename ObjectType, TLSMPDestructorOpt opt>
 inline void* CTLSMemoryPool64<ObjectType, opt>::CTLSMPCore::CTLSMPBucket::operator new(size_t size)
 {
-	return HeapAlloc(CTLSMemoryPool64<ObjectType, opt>::_HeapHandle, 0, sizeof(CTLSMPBucket));
+	return HeapAlloc(CTLSMemoryPool64<ObjectType, opt>::TLSMPHeapHandle, 0, sizeof(CTLSMPBucket));
 }
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
 inline void CTLSMemoryPool64<ObjectType, opt>::CTLSMPCore::CTLSMPBucket::operator delete(void* _Block)
 {
-	HeapFree(CTLSMemoryPool64<ObjectType, opt>::_HeapHandle, 0, _Block);
+	HeapFree(CTLSMemoryPool64<ObjectType, opt>::TLSMPHeapHandle, 0, _Block);
 }
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
 DWORD CTLSMemoryPool64<ObjectType, opt>::TLSIndex = 0;
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
-HANDLE CTLSMemoryPool64<ObjectType, opt>::_HeapHandle = NULL;
+HANDLE CTLSMemoryPool64<ObjectType, opt>::TLSMPHeapHandle = NULL;
 
 template<typename ObjectType, TLSMPDestructorOpt opt>
-CTLSMemoryPool64<ObjectType, opt> CTLSMemoryPool64<ObjectType, opt>::Initializer;
-
-template<typename ObjectType, TLSMPDestructorOpt opt>
-LONG CTLSMemoryPool64<ObjectType, opt>::_InstanceCount = 0;
+LONG CTLSMemoryPool64<ObjectType, opt>::InstanceCount = 0;
