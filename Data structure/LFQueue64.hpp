@@ -36,14 +36,14 @@ namespace SJNET
 		inline CLFQueue64<T>::CLFQueue64(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize, Types ...dummyConstructorArgs)
 			: _NodePool(flOptions, dwInitialSize, dwMaximumSize)
 		{
-			_pHead = _pTail = _NodePool.GetObjectFromPool(dummyConstructorArgs...);
+			_pHead = _pTail = _NodePool.New(dummyConstructorArgs...);
 			_pHead->_pNext = nullptr;
 		}
 
 		template<typename T>
 		void CLFQueue64<T>::Push(const T data)
 		{
-			CLFQueue64Node* pNewNode = _NodePool.GetObjectFromPool(data);
+			CLFQueue64Node* pNewNode = _NodePool.New(data);
 
 			CLFQueue64Node* volatile pTempTail;
 			CLFQueue64Node* volatile pTempTailNext;
@@ -75,8 +75,8 @@ namespace SJNET
 			CLFQueue64Node* volatile pTempTail;
 			for (;;)
 			{
-				pTempHead = this->_pHead;
 				pTempTail = this->_pTail;
+				pTempHead = this->_pHead;
 				pTempHeadNext = reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempHead))->_pNext;
 				if (pTempHead == pTempTail)
 				{
@@ -96,14 +96,14 @@ namespace SJNET
 						continue;
 					else
 						buf = pTempHeadNext->data;	// do while 안에서 미리 해야함.
-						// CAS 성공 후 나가서 하면 재사용된 노드의 data 필드를 얻어오는 결함이 발생할 수 있다.
+					// CAS 성공 후 나가서 하면 재사용된 노드의 data 필드를 얻어오는 결함이 발생할 수 있다.
 				}
 
 				if (pTempHead == InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&this->_pHead), reinterpret_cast<PVOID>(reinterpret_cast<ULONG64>(pTempHeadNext) | (GetLFStamp(pTempHead) + LF_MASK_INC)), pTempHead))
 					break;
 			}
 
-			_NodePool.ReturnObjectToPool(reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempHead)));		// 더미 노드로 쓰였던 노드를 해제한다.
+			_NodePool.Delete(reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempHead)));		// 더미 노드로 쓰였던 노드를 해제한다.
 			return true;
 		}
 

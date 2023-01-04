@@ -47,7 +47,7 @@ namespace SJNET
 		template<typename T>
 		void CLFStack64<T>::Push(const T data)
 		{
-			CLFStack64Node* pNewNode = _NodePool.GetObjectFromPool(data);
+			CLFStack64Node* pNewNode = _NodePool.New(data);
 
 			CLFStack64Node* volatile pTemp;
 			CLFStack64Node* volatile pNewTop;
@@ -74,7 +74,7 @@ namespace SJNET
 
 			pNode = reinterpret_cast<CLFStack64Node*>(GetLFStampRemovedAddress(pNode));
 			buf = pNode->data;
-			_NodePool.ReturnObjectToPool(pNode);
+			_NodePool.Delete(pNode);
 			return true;
 		}
 	}
