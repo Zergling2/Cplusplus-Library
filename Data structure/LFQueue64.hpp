@@ -75,8 +75,8 @@ namespace SJNET
 			CLFQueue64Node* volatile pTempTail;
 			for (;;)
 			{
-				pTempTail = this->_pTail;
 				pTempHead = this->_pHead;
+				pTempTail = this->_pTail;
 				pTempHeadNext = reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempHead))->_pNext;
 				if (pTempHead == pTempTail)
 				{
