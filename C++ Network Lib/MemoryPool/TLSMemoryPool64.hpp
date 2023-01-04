@@ -127,10 +127,11 @@ ObjectType* CTLSMemoryPool64<ObjectType, opt>::CTLSMPCore::New(Types ...args)
 			new (pNode) ObjectType(args...);
 			LONG64 com;
 			LONG64 mask = ~(pNode->_Mask);
+			volatile CTLSMPBucket* pBucket = *iter;
 			do
 			{
-				com = *(pNode->_pFlag);
-			} while (com != InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(pNode->_pFlag), (*iter)->_Flag & mask, com));
+				com = (*iter)->_Flag;
+			} while (com != InterlockedCompareExchange64(reinterpret_cast<volatile LONG64*>(pNode->_pFlag), pBucket->_Flag & mask, com));
 
 			return reinterpret_cast<ObjectType*>(pNode);
 		}
@@ -149,7 +150,7 @@ void CTLSMemoryPool64<ObjectType, opt>::CTLSMPCore::Delete(ObjectType* pObj)
 {
 	if constexpr (opt == TLSMPDestructorOpt::AUTO)
 		pObj->~ObjectType();
-	volatile  CTLSMPNode* pNode = reinterpret_cast<CTLSMPNode*>(pObj);
+	volatile CTLSMPNode* pNode = reinterpret_cast<CTLSMPNode*>(pObj);
 
 	LONG64 com;
 	do
