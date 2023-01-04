@@ -107,12 +107,12 @@ namespace SJNET
 		public:
 			CLFMemoryPool64(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);	// (경고!) dwMaximumSize가 0이 아닌 경우 LFH 적용 불가 및 해당 힙에서의 객체 최대 할당 크기는 0x7FFF8로 제한됨.
 			~CLFMemoryPool64();
-			template<typename ...Types> ObjectType* GetObjectFromPool(Types ...args);
-			void ReturnObjectToPool(ObjectType* _Ret);
+			template<typename ...Types> ObjectType* New(Types ...args);
+			void Delete(ObjectType* _Ret);
 		private:
 			void GetObjectErrorCrash();
 			void ReturnObjectErrorCrash(CLFMemoryPool64<ObjectType, opt>* address);
-			alignas(8) Node* volatile _pTop;		//[hard-coded] Because this library only supports 64-bit.
+			alignas(8) Node* volatile _pTop;		// this library only supports 64-bit.
 			HANDLE hHeapHandle;
 			DWORD dwHeapOptions;
 		};
@@ -143,7 +143,7 @@ namespace SJNET
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
 		template<typename ...Types>
-		ObjectType* CLFMemoryPool64<ObjectType, opt>::GetObjectFromPool(Types ...args)
+		ObjectType* CLFMemoryPool64<ObjectType, opt>::New(Types ...args)
 		{
 			Node* pNode;
 			Node* pNewTop;
@@ -167,7 +167,7 @@ namespace SJNET
 		}
 
 		template<typename ObjectType, LFMPDestructorCallOption opt>
-		void CLFMemoryPool64<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
+		void CLFMemoryPool64<ObjectType, opt>::Delete(ObjectType* pObj)
 		{
 			if (reinterpret_cast<Node*>(pObj)->_pSource != this)
 				CLFMemoryPool64<ObjectType, opt>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(pObj)->_pSource);
