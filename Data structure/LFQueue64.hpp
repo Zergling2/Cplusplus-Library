@@ -80,7 +80,7 @@ namespace SJNET
 				pTempHeadNext = reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempHead))->_pNext;
 				if (pTempHead == pTempTail)
 				{
-					if (pTempHeadNext == nullptr)		// 진짜로 이 시점에는 노드가 없었던 경우
+					if (pTempHeadNext == nullptr)		// 사실 추가된 노드가 있었을 수 있다. 그러나 그게 락프리 큐 인스턴스와 '연결'된 상태는 아니었던 것.
 					{
 						return false;
 					}
