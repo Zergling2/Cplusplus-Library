@@ -53,8 +53,7 @@ namespace SJNET
 				pTempTailNext = reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempTail))->_pNext;
 				if (pTempTailNext == nullptr)
 				{
-					CLFQueue64Node** ppTarget = &reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempTail))->_pNext;
-					if (nullptr == InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(ppTarget), pNewNode, nullptr))
+					if (nullptr == InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempTail))->_pNext), pNewNode, nullptr))
 					{
 						InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&this->_pTail), reinterpret_cast<PVOID>(reinterpret_cast<ULONG64>(pNewNode) | (GetLFStamp(pTempTail) + LF_MASK_INC)), pTempTail);
 						break;
