@@ -28,7 +28,7 @@ namespace SJNET
 			bool Empty() { return !GetLFStampRemovedAddress(_pTop); }
 		private:
 			alignas(8) CLFStack64Node* _pTop;		// 64비트 경계에 정렬
-			alignas(64) CLFMemoryPool64<CLFStack64<T>::CLFStack64Node, LFMPDestructorCallOption::AUTO> _NodePool;
+			alignas(64) CLFMemoryPool64<CLFStack64Node, LFMPDestructorCallOption::AUTO> _NodePool;
 		};
 
 		template<typename T>
