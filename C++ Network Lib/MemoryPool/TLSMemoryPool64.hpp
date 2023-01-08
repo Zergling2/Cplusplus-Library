@@ -34,7 +34,7 @@ private:
 		{
 		public:
 			inline void* operator new(size_t size);
-			void operator delete(void* _Block);		// deprecated
+			void operator delete(void* _Block);
 			template<typename ...Types> inline CTLSMPNode(Types ...args) : _Obj(args...), _pNext(nullptr) {}
 			ObjectType _Obj;
 			CTLSMPNode* _pNext;
