@@ -125,7 +125,7 @@ namespace SJNET
 		{
 			SYSTEM_INFO si;
 			GetSystemInfo(&si);
-			if ((reinterpret_cast<size_t>(si.lpMaximumApplicationAddress) & 0xFFFF800000000000) != 0)
+			if ((reinterpret_cast<ULONG64>(si.lpMaximumApplicationAddress) & static_cast<ULONG64>(0xFFFF800000000000)) != 0)
 			{
 				SJNET::API::CFileLogger fLogger(L"CLFMemoryPool64 Error_", true);
 				wchar_t logBuffer[256];

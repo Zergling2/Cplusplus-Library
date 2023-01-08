@@ -1,0 +1,7 @@
+사용할 인스턴스 타입 cpp 파일에
+해당 인스턴스 타입의 static 인스턴스를 정의해 주어야만 
+해당 인스턴스를 위한 TLS 인덱스를 할당받는다.
+
+ex) CTLSMemoryPool64<CApple, TLSMPDestructorOpt::AUTO> CTLSMemoryPool64<CApple, TLSMPDestructorOpt::AUTO>::TLSAllocater;
+
+23/01/08 전처리기로 편하게 사용할 수 있게 선언문 대체하자

@@ -16,7 +16,7 @@
 // constexpr SIZE_T dwMaximumSize = 0;
 // -------------------------------------------
 
-enum class MPOption
+enum class SRWLMPOption
 {
 	RETURNED_TO_POOL,
 	FROM_POOL_DESTRUCTOR
@@ -26,8 +26,8 @@ namespace SJNET
 {
 	namespace LIB
 	{
-		template<typename ObjectType, MPOption opt>
-		class CMemoryPool
+		template<typename ObjectType, SRWLMPOption opt>
+		class CSRWLMemoryPool
 		{
 		private:
 			struct Node
@@ -37,25 +37,25 @@ namespace SJNET
 				// void* operator new(size_t size);			// deprecated
 				// void operator delete(void* _Block);		// deprecated
 				ObjectType object;
-				CMemoryPool<ObjectType, opt>* pSource;
+				CSRWLMemoryPool<ObjectType, opt>* pSource;
 				Node* below;
 			};
 		public:
-			CMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);	// (경고!) dwMaximumSize가 0이 아닌 경우 LFH 적용 불가 및 해당 힙에서의 객체 최대 할당 크기는 0x7FFF8로 제한됨.
-			~CMemoryPool();
+			CSRWLMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);	// (경고!) dwMaximumSize가 0이 아닌 경우 LFH 적용 불가 및 해당 힙에서의 객체 최대 할당 크기는 0x7FFF8로 제한됨.
+			~CSRWLMemoryPool();
 			template<typename ...Types> ObjectType* GetObjectFromPool(Types ...args);
 			void ReturnObjectToPool(ObjectType* _Ret);
 		private:
 			void GetObjectErrorCrash();
-			void ReturnObjectErrorCrash(CMemoryPool<ObjectType, opt>* address);
+			void ReturnObjectErrorCrash(CSRWLMemoryPool<ObjectType, opt>* address);
 			Node* _Top;
 			SRWLOCK stSRWLock;
 			HANDLE hHeapHandle;
 			DWORD dwHeapOptions;
 		};
 
-		template<typename ObjectType, MPOption opt>
-		CMemoryPool<ObjectType, opt>::CMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
+		template<typename ObjectType, SRWLMPOption opt>
+		CSRWLMemoryPool<ObjectType, opt>::CSRWLMemoryPool(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
 			: _Top(nullptr)
 			, hHeapHandle(HeapCreate(flOptions, dwInitialSize, dwMaximumSize))
 			, dwHeapOptions(flOptions)
@@ -63,10 +63,10 @@ namespace SJNET
 			InitializeSRWLock(&this->stSRWLock);
 		}
 
-		template<typename ObjectType, MPOption opt>
-		inline CMemoryPool<ObjectType, opt>::~CMemoryPool()
+		template<typename ObjectType, SRWLMPOption opt>
+		inline CSRWLMemoryPool<ObjectType, opt>::~CSRWLMemoryPool()
 		{
-			if constexpr (opt == MPOption::FROM_POOL_DESTRUCTOR)
+			if constexpr (opt == SRWLMPOption::FROM_POOL_DESTRUCTOR)
 			{
 				AcquireSRWLockExclusive(&this->stSRWLock);
 
@@ -85,9 +85,9 @@ namespace SJNET
 			HeapDestroy(this->hHeapHandle);
 		}
 
-		template<typename ObjectType, MPOption opt>
+		template<typename ObjectType, SRWLMPOption opt>
 		template<typename ...Types>
-		inline ObjectType* CMemoryPool<ObjectType, opt>::GetObjectFromPool(Types ...args)
+		inline ObjectType* CSRWLMemoryPool<ObjectType, opt>::GetObjectFromPool(Types ...args)
 		{
 			AcquireSRWLockExclusive(&this->stSRWLock);
 			Node* pNode;
@@ -95,9 +95,9 @@ namespace SJNET
 			if (!(this->_Top))
 			{
 				ReleaseSRWLockExclusive(&this->stSRWLock);
-				pNode = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CMemoryPool<ObjectType, opt>::Node)));
+				pNode = reinterpret_cast<Node*>(HeapAlloc(this->hHeapHandle, this->dwHeapOptions, sizeof(CSRWLMemoryPool<ObjectType, opt>::Node)));
 				if (pNode == NULL)
-					CMemoryPool<ObjectType, opt>::GetObjectErrorCrash();
+					CSRWLMemoryPool<ObjectType, opt>::GetObjectErrorCrash();
 				new (pNode) ObjectType(args...);		// placement new
 				pNode->pSource = this;
 			}
@@ -112,13 +112,13 @@ namespace SJNET
 			return reinterpret_cast<ObjectType*>(pNode);
 		}
 
-		template<typename ObjectType, MPOption opt>
-		inline void CMemoryPool<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
+		template<typename ObjectType, SRWLMPOption opt>
+		inline void CSRWLMemoryPool<ObjectType, opt>::ReturnObjectToPool(ObjectType* pObj)
 		{
 			if (reinterpret_cast<Node*>(pObj)->pSource != this)
-				CMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(pObj)->pSource);
+				CSRWLMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(reinterpret_cast<Node*>(pObj)->pSource);
 
-			if constexpr (opt == MPOption::RETURNED_TO_POOL)
+			if constexpr (opt == SRWLMPOption::RETURNED_TO_POOL)
 				pObj->~ObjectType();
 
 			AcquireSRWLockExclusive(&this->stSRWLock);
@@ -128,29 +128,29 @@ namespace SJNET
 			ReleaseSRWLockExclusive(&this->stSRWLock);
 		}
 
-		template<typename ObjectType, MPOption opt>
-		inline void CMemoryPool<ObjectType, opt>::GetObjectErrorCrash()
+		template<typename ObjectType, SRWLMPOption opt>
+		inline void CSRWLMemoryPool<ObjectType, opt>::GetObjectErrorCrash()
 		{
-			SJNET::API::CFileLogger fLogger(L"CMemoryPool_MT Error_", true);
+			SJNET::API::CFileLogger fLogger(L"CSRWLMemoryPool Error_", true);
 			wchar_t logBuffer[256];
-			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] std::bad_alloc exception occurred. Pool address is 0x%p", this);
+			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[SRWL MemPool Error] std::bad_alloc exception occurred. Pool address is 0x%p", this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
 			ForceCrash(0xDEADBEEF);
 		}
 
-		template<typename ObjectType, MPOption opt>
-		inline void CMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(CMemoryPool<ObjectType, opt>* address)
+		template<typename ObjectType, SRWLMPOption opt>
+		inline void CSRWLMemoryPool<ObjectType, opt>::ReturnObjectErrorCrash(CSRWLMemoryPool<ObjectType, opt>* address)
 		{
-			SJNET::API::CFileLogger fLogger(L"CMemoryPool_MT Error_", true);
+			SJNET::API::CFileLogger fLogger(L"CSRWLMemoryPool Error_", true);
 			wchar_t logBuffer[256];
-			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[MEMORY POOL ERROR] An object created from another pool(0x%p) has been returned to the pool located at address 0x%p.", address, this);
+			StringCbPrintfW(logBuffer, sizeof(logBuffer), L"[SRWL MemPool Error] An object created from another pool(0x%p) has been returned to the pool located at address 0x%p.", address, this);
 			fLogger.WriteLog(logBuffer, LogType::LT_CRITICAL);
 			ForceCrash(0xDEADBEEF);
 		}
 
-		template<typename ObjectType, MPOption opt>
+		template<typename ObjectType, SRWLMPOption opt>
 		template<typename ...Types>
-		inline CMemoryPool<ObjectType, opt>::Node::Node(Types ...args)
+		inline CSRWLMemoryPool<ObjectType, opt>::Node::Node(Types ...args)
 			: object(args...)
 		{
 		}
