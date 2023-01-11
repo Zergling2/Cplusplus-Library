@@ -7,11 +7,12 @@
 #undef _WINSOCKAPI
 #include "LFStack64.hpp"
 
-#define TLS_MEMORY_POOL(class_name, DestructorOpt) CTLSMemoryPool64<class_name, DestructorOpt>
-
+// ========================================================================================================================
+// You must add this preprocessor directives to the cpp file of the class for which you want to use the TLS memory pool.
 #define TLS_MEMORY_POOL_USING(class_name, DestructorOpt) \
 CTLSMemoryPool64<class_name, DestructorOpt> CTLSMemoryPool64<class_name, DestructorOpt>::TLSAllocater;\
 CTLSMemoryPool64<class_name, DestructorOpt>::CTLSMPCore::CTLSMPSuper CTLSMemoryPool64<class_name, DestructorOpt>::CTLSMPCore::CTLSMPSuper::SuperPool;
+// ========================================================================================================================
 
 enum class TLSMPDestructorOpt
 {

@@ -26,15 +26,17 @@ namespace SJNET
 			void Push(const T data);
 			bool Pop(T& buf);
 		private:
+			alignas(64) CLFMemoryPool64<CLFQueue64Node, LFMPDestructorCallOption::AUTO> _NodePool;
 			alignas(64) CLFQueue64Node* _pHead;
 			alignas(64) CLFQueue64Node* _pTail;
-			alignas(64) CLFMemoryPool64<CLFQueue64Node, LFMPDestructorCallOption::AUTO> _NodePool;
+			alignas(64) LONG _Size;
 		};
 
 		template<typename T>
 		template<typename ...Types>
 		inline CLFQueue64<T>::CLFQueue64(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize, Types ...dummyConstructorArgs)
 			: _NodePool(flOptions, dwInitialSize, dwMaximumSize)
+			, _Size(0)
 		{
 			_pHead = _pTail = _NodePool.New(dummyConstructorArgs...);
 			_pHead->_pNext = nullptr;
@@ -55,6 +57,7 @@ namespace SJNET
 				{
 					if (nullptr == InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&reinterpret_cast<CLFQueue64Node*>(GetLFStampRemovedAddress(pTempTail))->_pNext), pNewNode, nullptr))
 					{
+						InterlockedIncrement(&this->_Size);
 						InterlockedCompareExchangePointer(reinterpret_cast<volatile PVOID*>(&this->_pTail), reinterpret_cast<PVOID>(reinterpret_cast<ULONG64>(pNewNode) | (GetLFStamp(pTempTail) + LF_MASK_INC)), pTempTail);
 						break;
 					}
@@ -72,6 +75,13 @@ namespace SJNET
 			CLFQueue64Node* volatile pTempHead;
 			CLFQueue64Node* volatile pTempHeadNext;
 			CLFQueue64Node* volatile pTempTail;
+
+			if (InterlockedDecrement(&this->_Size) < 0)
+			{
+				InterlockedIncrement(&this->_Size);
+				return false;
+			}
+
 			for (;;)
 			{
 				pTempTail = this->_pTail;
@@ -81,7 +91,7 @@ namespace SJNET
 				{
 					if (pTempHeadNext == nullptr)		// 사실 추가된 노드가 있었을 수 있다. 그러나 그게 락프리 큐 인스턴스와 '연결'된 상태는 아니었던 것.
 					{
-						return false;
+						continue;
 					}
 					else
 					{
